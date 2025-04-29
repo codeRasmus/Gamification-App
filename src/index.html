@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="da">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Opret opgave</title>
+  </head>
+  <body>
+    <h1>Opret ny opgave</h1>
+    <form action="http://localhost:5500/api/tasks" method="POST" id="taskForm">
+      <label for="spørgsmål">Spørgsmål:</label><br />
+      <input type="text" id="spørgsmål" name="Spørgsmål" required /><br /><br />
+
+      <label for="kategori">Kategori:</label><br />
+      <input type="text" id="kategori" name="Kategori" required /><br /><br />
+
+      <label for="kompetencetype">Kompetencetype:</label><br />
+      <input
+        type="text"
+        id="kompetencetype"
+        name="Kompetencetype"
+        required
+      /><br /><br />
+
+      <label for="sværhedsgrad">Sværhedsgrad:</label><br />
+      <input
+        type="text"
+        id="sværhedsgrad"
+        name="Sværhedsgrad"
+        required
+      /><br /><br />
+
+      <label for="opgavetype">Opgavetype:</label><br />
+      <input
+        type="text"
+        id="opgavetype"
+        name="Opgavetype"
+        required
+      /><br /><br />
+
+      <label for="medie">Medie:</label><br />
+      <input type="text" id="medie" name="Medie" required /><br /><br />
+
+      <label for="tid">Tid (i minutter):</label><br />
+      <input type="number" id="tid" name="Tid" required /><br /><br />
+
+      <button type="submit">Send</button>
+    </form>
+    <script>
+      document
+        .getElementById("taskForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+        });
+    </script>
+  </body>
+</html>
