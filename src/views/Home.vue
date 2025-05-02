@@ -1,7 +1,5 @@
 <script setup></script>
 
 <template>
-  <div id="app">
-    <router-view />
-  </div>
+  <h1>Home Panel</h1>
 </template>
