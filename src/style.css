@@ -1,0 +1,77 @@
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+a {
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+.hjv-logo {
+  width: 125px;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+.home-bg {
+  background-color: #ffffff;
+  height: 100vh;
+  color: #8d1b3d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  background: linear-gradient(rgba(105, 105, 105, 0.4), rgba(0, 0, 0, 0.4)), url("./assets/granatkaster.webp");
+  background-size: cover;
+}
+.welcome-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  height: 90%;
+  width: 100%;
+  color: white;
+}
+.welcome-text h1 {
+  font-size: 48px;
+}
+.welcome-text h3 {
+  font-size: 28px;
+}
+.welcome-buttons {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 20px;
+}
+.welcome-buttons button {
+  border: 0;
+  color: white;
+  font-weight: bold;
+}
+.welcome-buttons button a {
+  text-decoration: none;
+  color: white;
+}
+.teamLogin {
+  background-color: #8d1b3d;
+  padding: 16px;
+  width: 250px;
+  font-size: 18px;
+  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+}
+.gamemasterLogin {
+  background-color: #551025;
+  padding: 16px;
+  font-size: 12px;
+  width: 200px;
+  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+}
