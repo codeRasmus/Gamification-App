@@ -1,5 +1,9 @@
-<script setup></script>
+<script setup>
+import Welcome from "../components/Welcome.vue";
+</script>
 
 <template>
-  <h1>Home Panel</h1>
+  <div class="home-bg">
+    <Welcome />
+  </div>
 </template>
