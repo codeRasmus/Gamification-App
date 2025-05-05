@@ -1,18 +1,54 @@
 <script setup>
+import { onMounted } from "vue";
+
+onMounted(() => {
+  const form = document.querySelector("form");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    try {
+      const res = await fetch("http://localhost:5500/api/admin/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await res.json();
+      console.log("Server response:", data);
+
+      if (res.ok) {
+        alert("Login successful!");
+        localStorage.setItem("token", data.token);
+      } else {
+        alert(data.message || "Login failed.");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      alert("Something went wrong during login.");
+    }
+  });
+});
 </script>
 
 <template>
-  <h1>Login</h1>
-  <form action="http://localhost:5500/api/admin/login" method="POST" class="card">
-    <h2>Log in</h2>
-    <label for="username">Brugernavn</label>
-    <input type="text" name="username" id="username" />
+  <div class="loginComponent">
+    <form class="card">
+      <h1>GameMaster Login</h1>
+      <label for="username">Brugernavn</label>
+      <input type="text" name="username" id="username" />
 
-    <label for="password">Adgangskode</label>
-    <input type="password" name="password" id="password" />
+      <label for="password">Adgangskode</label>
+      <input type="password" name="password" id="password" />
 
-    <button type="submit">Login</button>
+      <button type="submit">Login</button>
     </form>
+  </div>
 </template>
 
 <style scoped>
@@ -28,13 +64,14 @@ form {
   margin-bottom: 20px;
 }
 
-h1, form h2 {
-  font-family: 'Arial', sans-serif;
+h1,
+form h2 {
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
   color: #333;
 }
 
 label {
-  font-family: 'Arial', sans-serif;
+  font-family: "Arial", sans-serif;
   font-weight: 600;
   color: #444;
   margin-bottom: 0.5rem;
@@ -56,23 +93,22 @@ select {
 input[type="text"]:focus,
 input[type="number"]:focus,
 select:focus {
-  border-color: #0057b7;
+  border-color: #551025;
   outline: none;
 }
 
 button {
   padding: 0.8rem 1.5rem;
-  background-color: #0057b7;
+  background-color: #8d1b3d;
   color: white;
   border: none;
-  border-radius: 6px;
   font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 button:hover {
-  background-color: #004099;
+  background-color: #551025;
   transform: scale(1.05);
 }
 
@@ -82,13 +118,19 @@ button:focus {
 
 .card {
   max-width: 600px;
-  margin: 0 auto;
+}
+
+.loginComponent {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  height: 100vh;
+  background: #551025;
+  background: linear-gradient(0deg, rgba(85, 16, 37, 1) 0%, rgba(141, 27, 61, 1) 100%);
 }
 
 h1 {
-  text-align: center;
-  font-size: 2.5rem;
-  margin-bottom: 2rem;
+  text-align: left;
+  font-size: 1.9rem;
 }
 </style>
-
