@@ -11,7 +11,46 @@ onMounted(() => {
   if (!localStorage.getItem("token")) {
     router.push("/login");
   }
+  const logoutBtn = document.getElementById("logout");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      localStorage.removeItem("token");
+      router.push("/login");
+    });
+  }
 });
+
+const handleRegister = async (event) => {
+  event.preventDefault();
+
+  const username = event.target.username.value;
+  const password = event.target.password.value;
+
+  try {
+    const response = await fetch("http://localhost:5500/api/admin/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({ username, password }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert("Bruger oprettet!");
+    } else if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem("token");
+      router.push("/login");
+    } else {
+      alert(data.message || "Fejl ved oprettelse");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Netværksfejl");
+  }
+};
 
 const handleDelete = async (event) => {
   event.preventDefault();
@@ -21,11 +60,17 @@ const handleDelete = async (event) => {
   if (deleteId.trim()) {
     try {
       const response = await fetch(`http://localhost:5500/api/tasks/${deleteId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
         method: "DELETE",
       });
 
       if (response.ok) {
         alert("Task deleted successfully");
+      } else if (response.status === 401) {
+        localStorage.removeItem("token");
+        router.push("/login");
       } else {
         alert("Error deleting task");
       }
@@ -59,12 +104,18 @@ const handleGetTask = async (event) => {
   if (taskId.trim()) {
     try {
       const response = await fetch(`http://localhost:5500/api/tasks/${taskId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
         method: "GET",
       });
 
       if (response.ok) {
         const task = await response.json();
         console.log(task);
+      } else if (response.status === 401) {
+        localStorage.removeItem("token");
+        router.push("/login");
       } else {
         alert("Error fetching task");
       }
@@ -82,7 +133,6 @@ const handlePatchTask = async (event) => {
   const taskId = event.target.taskId.value;
   const updatedFields = {};
 
-  // Gather updated fields from the form
   const formElements = event.target.elements;
   Array.from(formElements).forEach((element) => {
     if (element.name && element.value) {
@@ -90,7 +140,6 @@ const handlePatchTask = async (event) => {
     }
   });
 
-  // Remove taskId from the fields (we don't want to update the ID)
   delete updatedFields.taskId;
 
   if (taskId.trim() && Object.keys(updatedFields).length > 0) {
@@ -99,6 +148,7 @@ const handlePatchTask = async (event) => {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify(updatedFields),
       });
@@ -107,6 +157,9 @@ const handlePatchTask = async (event) => {
         const updatedTask = await response.json();
         alert("Task updated successfully");
         console.log(updatedTask);
+      } else if (response.status === 401) {
+        localStorage.removeItem("token");
+        router.push("/login");
       } else {
         alert("Error updating task");
       }
@@ -134,7 +187,8 @@ const handlePatchTask = async (event) => {
         <li><a href="#" @click.prevent="showCard('card')">Game</a></li>
         <li><a href="#" @click.prevent="showCard('card1')">Se opgaver</a></li>
         <li><a href="#" @click.prevent="showCard('card2-4')">Administrer Opgaver</a></li>
-        <li><a href="#" @click.prevent="showCard('card5')">Opret Bruger</a></li>
+        <li><a href="#" @click.prevent="showCard('card5')">Opret Admin</a></li>
+        <li><a href="#" id="logout">Log ud</a></li>
       </ul>
     </nav>
     <div class="menuControls">
@@ -288,11 +342,7 @@ const handlePatchTask = async (event) => {
         <button type="submit">Slet</button>
       </form>
 
-      <form
-        v-show="visibleCard === 'card5'"
-        action="http://localhost:5500/api/admin/register"
-        method="POST"
-        class="card5">
+      <form v-show="visibleCard === 'card5'" @submit="handleRegister" class="card5">
         <h2>Opret admin</h2>
         <label for="username">Brugernavn</label>
         <input type="text" name="username" id="username" />
@@ -340,7 +390,7 @@ const handlePatchTask = async (event) => {
 
 .menuControls {
   flex: 1;
-  padding: 120px 20px 140px; /* Top: under .title, Bottom: over .footerImg */
+  padding: 120px 20px 140px;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
@@ -469,7 +519,7 @@ button:focus {
   color: white;
   text-decoration: none;
   display: block;
-  padding: 15px 20px 15px 10px;
+  padding: 15px 20px 15px 0px;
   margin: 0 40px 0 0;
   border-bottom: 1px solid #ffffff;
   transition: background-color 0.2s;
