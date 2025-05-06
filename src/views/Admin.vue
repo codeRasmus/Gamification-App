@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import Host from "../components/Host.vue";
 const router = useRouter();
 const visibleCard = ref("card");
 function showCard(cardName) {
@@ -192,7 +193,7 @@ const handlePatchTask = async (event) => {
       </ul>
     </nav>
     <div class="menuControls">
-      <div v-show="visibleCard === 'card'">Data kommer her...</div>
+      <div v-show="visibleCard === 'card'"><Host /></div>
       <form v-show="visibleCard === 'card1'" action="http://localhost:5500/api/tasks" method="GET" class="card">
         <label for="">Hent alle opgaver</label>
         <button type="submit">Hent</button>

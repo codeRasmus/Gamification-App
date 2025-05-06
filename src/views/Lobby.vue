@@ -1,10 +1,10 @@
 <script setup>
 import Countdown from "../components/Countdown.vue";
+import Player from "../components/Player.vue";
 </script>
 <template>
   <div class="home-bg">
-      <input type="number" minlength="6" maxlength="6">
-      <button>Send</button>
+    <Player />
   </div>
 </template>
 <style scoped></style>

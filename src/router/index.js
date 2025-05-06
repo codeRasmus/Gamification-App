@@ -4,6 +4,7 @@ import Admin from "../views/Admin.vue";
 import Login from "../views/Login.vue";
 import Lobby from "../views/Lobby.vue";
 import JoinTeam from "../views/JoinTeam.vue";
+import Task from "../views/Task.vue";
 
 const routes = [
   { path: "/", component: Home },
@@ -11,6 +12,7 @@ const routes = [
   { path: "/login", component: Login },
   { path: "/lobby", component: Lobby },
   { path: "/joinTeam", component: JoinTeam },
+  { path: "/task", component: Task },
 ];
 
 const router = createRouter({
