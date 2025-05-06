@@ -3,12 +3,14 @@ import Home from "../views/Home.vue";
 import Admin from "../views/Admin.vue";
 import Login from "../views/Login.vue";
 import Lobby from "../views/Lobby.vue";
+import JoinTeam from "../views/JoinTeam.vue";
 
 const routes = [
   { path: "/", component: Home },
   { path: "/admin", component: Admin, meta: { requiresAuth: true } },
   { path: "/login", component: Login },
   { path: "/lobby", component: Lobby },
+  { path: "/joinTeam", component: JoinTeam },
 ];
 
 const router = createRouter({
