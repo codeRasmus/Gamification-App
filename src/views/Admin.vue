@@ -83,6 +83,32 @@ const handleDelete = async (event) => {
   }
 };
 
+const handleDeleteAllTasks = async (event) => {
+  event.preventDefault();
+
+  if (!confirm("Er du sikker på, at du vil slette ALLE opgaver?")) return;
+
+  try {
+    const response = await fetch("http://localhost:5500/api/tasks", {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    if (response.ok) {
+      alert("Alle opgaver blev slettet.");
+    } else if (response.status === 401) {
+      localStorage.removeItem("token");
+      router.push("/login");
+    } else {
+      alert("Fejl under sletning af opgaver.");
+    }
+  } catch (error) {
+    alert("Netværksfejl under sletning: " + error.message);
+  }
+};
+
 function toggleMenu(el) {
   el.classList.toggle("active");
   document.querySelector(".navMenu").classList.toggle("show");
@@ -171,6 +197,47 @@ const handlePatchTask = async (event) => {
     alert("Please provide a valid task ID and update some fields");
   }
 };
+
+const handleFileUpload = async (event) => {
+  event.preventDefault();
+
+  const fileInput = event.target.fileInput.files[0];
+  if (!fileInput) {
+    alert("Vælg venligst en fil.");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const csvText = e.target.result;
+
+    try {
+
+      const response = await fetch("http://localhost:5500/api/tasks/upload", {
+        method: "POST",
+        headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        "Content-Type": "text/csv",
+        },
+        body: csvText,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Spørgsmålene blev opdateret!");
+      } else {
+        alert(data.message || "Fejl ved upload af spørgsmål");
+      }
+    } catch (error) {
+      console.error("Fejl under CSV til JSON konvertering:", error);
+      alert("Fejl i filbehandling.");
+    }
+  };
+
+  reader.readAsText(fileInput); // Læs filen som tekst
+};
+
 </script>
 
 <template>
@@ -204,7 +271,7 @@ const handlePatchTask = async (event) => {
         <button type="submit">Hent</button>
       </form>
 
-      <!-- Tilføj opgaver -->
+      <!-- Tilføj opgave -->
       <form v-show="visibleCard === 'card2-4'" action="http://localhost:5500/api/tasks" method="POST" class="card2">
         <h2>Tilføj opgave</h2>
         <label for="Spørgsmål">Spørgsmål</label>
@@ -265,6 +332,7 @@ const handlePatchTask = async (event) => {
         <input name="Tid" id="Tid" type="number" min="1" />
         <button type="submit">Opret</button>
       </form>
+      
 
       <!-- Opdater opgaver -->
       <form v-show="visibleCard === 'card2-4'" @submit="handlePatchTask" class="card3">
@@ -343,6 +411,23 @@ const handlePatchTask = async (event) => {
         <button type="submit">Slet</button>
       </form>
 
+      <!-- Slet ALLE opgaver -->
+      <form v-show="visibleCard === 'card2-4'" @submit="handleDeleteAllTasks" class="card4">
+        <h3>Slet alle opgaver</h3>
+        <button type="submit">Slet alle</button>
+      </form>
+
+      <!-- Tilføj nyt opgavesæt -->
+       <form v-show="visibleCard === 'card2-4'" @submit="handleFileUpload" class="card">
+      <h2>Upload CSV-fil med nye spørgsmål</h2>
+  
+        <label for="fileInput">Vælg CSV-fil</label>
+        <input type="file" id="fileInput" name="tasksFile" accept=".csv" required />
+  
+       <button type="submit">Upload</button>
+      </form>
+
+      <!-- Opret Admin -->
       <form v-show="visibleCard === 'card5'" @submit="handleRegister" class="card5">
         <h2>Opret admin</h2>
         <label for="username">Brugernavn</label>
