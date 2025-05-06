@@ -1,8 +1,11 @@
 <script setup>
 import { onMounted } from "vue";
+import { useRouter } from "vue-router";
+const router = useRouter();
 
 onMounted(() => {
   const form = document.querySelector("form");
+  const statusMessage = document.querySelector(".statusMessage");
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -23,14 +26,20 @@ onMounted(() => {
       console.log("Server response:", data);
 
       if (res.ok) {
-        alert("Login successful!");
         localStorage.setItem("token", data.token);
+        statusMessage.style.display = "inline";
+        statusMessage.style.color = "green";
+        statusMessage.innerHTML = "Login godkendt";
+        setTimeout(() => {
+          router.push("/admin");
+        }, 2000);
       } else {
         alert(data.message || "Login failed.");
       }
     } catch (err) {
-      console.error("Login error:", err);
-      alert("Something went wrong during login.");
+      statusMessage.style.display = "inline";
+      statusMessage.style.color = "red";
+      statusMessage.innerHTML = "Brugernavn eller adgangskode er forkert";
     }
   });
 });
@@ -40,6 +49,7 @@ onMounted(() => {
   <div class="loginComponent">
     <form class="card">
       <h1>GameMaster Login</h1>
+      <p class="statusMessage"></p>
       <label for="username">Brugernavn</label>
       <input type="text" name="username" id="username" />
 
@@ -132,5 +142,9 @@ button:focus {
 h1 {
   text-align: left;
   font-size: 1.9rem;
+}
+
+.statusMessage {
+  display: none;
 }
 </style>

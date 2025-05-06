@@ -1,4 +1,18 @@
 <script setup>
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+const router = useRouter();
+const visibleCard = ref("card");
+function showCard(cardName) {
+  visibleCard.value = cardName;
+}
+
+onMounted(() => {
+  if (!localStorage.getItem("token")) {
+    router.push("/login");
+  }
+});
+
 const handleDelete = async (event) => {
   event.preventDefault();
 
@@ -7,21 +21,35 @@ const handleDelete = async (event) => {
   if (deleteId.trim()) {
     try {
       const response = await fetch(`http://localhost:5500/api/tasks/${deleteId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (response.ok) {
-        alert('Task deleted successfully');
+        alert("Task deleted successfully");
       } else {
-        alert('Error deleting task');
+        alert("Error deleting task");
       }
     } catch (error) {
-      alert('Error deleting task: ' + error.message);
+      alert("Error deleting task: " + error.message);
     }
   } else {
-    alert('Please provide a valid task ID');
+    alert("Please provide a valid task ID");
   }
 };
+
+function toggleMenu(el) {
+  el.classList.toggle("active");
+  document.querySelector(".navMenu").classList.toggle("show");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const hamburger = document.querySelector(".hamburger");
+  if (hamburger) {
+    hamburger.addEventListener("click", function () {
+      toggleMenu(this);
+    });
+  }
+});
 
 const handleGetTask = async (event) => {
   event.preventDefault();
@@ -31,20 +59,20 @@ const handleGetTask = async (event) => {
   if (taskId.trim()) {
     try {
       const response = await fetch(`http://localhost:5500/api/tasks/${taskId}`, {
-        method: 'GET',
+        method: "GET",
       });
 
       if (response.ok) {
         const task = await response.json();
-        console.log(task);  
+        console.log(task);
       } else {
-        alert('Error fetching task');
+        alert("Error fetching task");
       }
     } catch (error) {
-      alert('Error fetching task: ' + error.message);
+      alert("Error fetching task: " + error.message);
     }
   } else {
-    alert('Please provide a valid task ID');
+    alert("Please provide a valid task ID");
   }
 };
 
@@ -56,7 +84,7 @@ const handlePatchTask = async (event) => {
 
   // Gather updated fields from the form
   const formElements = event.target.elements;
-  Array.from(formElements).forEach(element => {
+  Array.from(formElements).forEach((element) => {
     if (element.name && element.value) {
       updatedFields[element.name] = element.value;
     }
@@ -68,234 +96,281 @@ const handlePatchTask = async (event) => {
   if (taskId.trim() && Object.keys(updatedFields).length > 0) {
     try {
       const response = await fetch(`http://localhost:5500/api/tasks/${taskId}`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(updatedFields),
       });
 
       if (response.ok) {
         const updatedTask = await response.json();
-        alert('Task updated successfully');
+        alert("Task updated successfully");
         console.log(updatedTask);
       } else {
-        alert('Error updating task');
+        alert("Error updating task");
       }
     } catch (error) {
-      alert('Error updating task: ' + error.message);
+      alert("Error updating task: " + error.message);
     }
   } else {
-    alert('Please provide a valid task ID and update some fields');
+    alert("Please provide a valid task ID and update some fields");
   }
 };
 </script>
 
 <template>
-  <h1>Admin Panel</h1>
+  <div class="menu">
+    <div class="title">
+      <a href="/admin">GameMaster Menu</a>
+      <div class="hamburger">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+    <nav class="navMenu">
+      <ul>
+        <li><a href="#" @click.prevent="showCard('card')">Game</a></li>
+        <li><a href="#" @click.prevent="showCard('card1')">Se opgaver</a></li>
+        <li><a href="#" @click.prevent="showCard('card2-4')">Administrer Opgaver</a></li>
+        <li><a href="#" @click.prevent="showCard('card5')">Opret Bruger</a></li>
+      </ul>
+    </nav>
+    <div class="menuControls">
+      <div v-show="visibleCard === 'card'">Data kommer her...</div>
+      <form v-show="visibleCard === 'card1'" action="http://localhost:5500/api/tasks" method="GET" class="card">
+        <label for="">Hent alle opgaver</label>
+        <button type="submit">Hent</button>
+      </form>
+      <form v-show="visibleCard === 'card1'" @submit="handleGetTask" class="card1">
+        <label for="taskId">Hent specifik opgave</label>
+        <input type="text" name="taskId" placeholder="Indtast ID på den opgave du vil hente" required />
+        <button type="submit">Hent</button>
+      </form>
 
-  <!-- Hent alle opgaver -->
-  <form action="http://localhost:5500/api/tasks" method="GET" class="card">
-    <label for="">Hent alle opgaver</label>
-    <button type="submit">Hent</button>
-  </form>
+      <!-- Tilføj opgaver -->
+      <form v-show="visibleCard === 'card2-4'" action="http://localhost:5500/api/tasks" method="POST" class="card2">
+        <h2>Tilføj opgave</h2>
+        <label for="Spørgsmål">Spørgsmål</label>
+        <input type="text" name="Spørgsmål" id="Spørgsmål" />
 
-  <!-- Hent specifik opgave -->
-  <form @submit="handleGetTask" class="card">
-    <label for="taskId">Hent specifik opgave</label>
-    <input 
-      type="text" 
-      name="taskId"
-      placeholder="Indtast ID på den opgave du vil hente" 
-      required
-    />
-    <button type="submit">Hent</button>
-  </form>
+        <label for="Kategori">Vælg kategori:</label>
+        <select id="Kategori" name="Kategori">
+          <option value="anerkendelse">Anerkendelse</option>
+          <option value="situationsbestemt-ledelse">Situationsbestemt Ledelse</option>
+          <option value="delegering">Delegering</option>
+          <option value="konflikthåndtering">Konflikthåndtering</option>
+          <option value="motivation">Motivation</option>
+          <option value="foelge-mig-ledelse">Følge mig-ledelse</option>
+          <option value="tilpasning">Tilpasning</option>
+          <option value="udvikling">Udvikling</option>
+          <option value="tryghed">Tryghed</option>
+          <option value="kommunikation">Kommunikation</option>
+        </select>
 
-  <!-- Tilføj opgaver -->
-  <form action="http://localhost:5500/api/tasks" method="POST" class="card">
-    <h2>Tilføj opgave</h2>
-    <label for="Spørgsmål">Spørgsmål</label>
-    <input type="text" name="Spørgsmål" id="Spørgsmål" />
+        <label for="Kompetencetype">Kompetencetype:</label>
+        <select id="Kompetencetype" name="Kompetencetype">
+          <option value="motivation-kommunikation">Motivation / Kommunikation</option>
+          <option value="beslutningstagning">Beslutningstagning</option>
+          <option value="udvikling-af-andre">Udvikling af andre</option>
+          <option value="relationel-ledelse">Relationel ledelse</option>
+          <option value="lederskab-samarbejde">Lederskab / Samarbejde</option>
+          <option value="eksempelgivende-ledelse">Eksempelgivende ledelse</option>
+          <option value="situationsforstaelse">Situationsforståelse</option>
+          <option value="mentorrolle-delegering">Mentorrolle / Delegering</option>
+          <option value="planlaegning-kommunikation">Planlægning / Kommunikation</option>
+          <option value="empati-strategi">Empati / Strategi</option>
+        </select>
 
-    <label for="Kategori">Vælg kategori:</label>
-    <select id="Kategori" name="Kategori">
-      <option value="anerkendelse">Anerkendelse</option>
-      <option value="situationsbestemt-ledelse">Situationsbestemt Ledelse</option>
-      <option value="delegering">Delegering</option>
-      <option value="konflikthåndtering">Konflikthåndtering</option>
-      <option value="motivation">Motivation</option>
-      <option value="foelge-mig-ledelse">Følge mig-ledelse</option>
-      <option value="tilpasning">Tilpasning</option>
-      <option value="udvikling">Udvikling</option>
-      <option value="tryghed">Tryghed</option>
-      <option value="kommunikation">Kommunikation</option>
-    </select>
+        <label for="Sværhedsgrad">Sværhedsgrad:</label>
+        <select id="Sværhedsgrad" name="Sværhedsgrad">
+          <option value="let">Let</option>
+          <option value="mellem">Mellem</option>
+          <option value="svaer">Svær</option>
+        </select>
 
-    <label for="Kompetencetype">Kompetencetype:</label>
-    <select id="Kompetencetype" name="Kompetencetype">
-      <option value="motivation-kommunikation">Motivation / Kommunikation</option>
-      <option value="beslutningstagning">Beslutningstagning</option>
-      <option value="udvikling-af-andre">Udvikling af andre</option>
-      <option value="relationel-ledelse">Relationel ledelse</option>
-      <option value="lederskab-samarbejde">Lederskab / Samarbejde</option>
-      <option value="eksempelgivende-ledelse">Eksempelgivende ledelse</option>
-      <option value="situationsforstaelse">Situationsforståelse</option>
-      <option value="mentorrolle-delegering">Mentorrolle / Delegering</option>
-      <option value="planlaegning-kommunikation">Planlægning / Kommunikation</option>
-      <option value="empati-strategi">Empati / Strategi</option>
-    </select>
+        <label for="Opgavetype">Opgavetype:</label>
+        <select id="Opgavetype" name="Opgavetype">
+          <option value="essay-refleksion">Essay / Refleksion</option>
+          <option value="multiple-choice">Multiple Choice</option>
+          <option value="case">Case</option>
+          <option value="scenarieopgave">Scenarieopgave</option>
+          <option value="essay">Essay</option>
+        </select>
 
-    <label for="Sværhedsgrad">Sværhedsgrad:</label>
-    <select id="Sværhedsgrad" name="Sværhedsgrad">
-      <option value="let">Let</option>
-      <option value="mellem">Mellem</option>
-      <option value="svaer">Svær</option>
-    </select>
+        <label for="Medie">Medie:</label>
+        <select id="Medie" name="Medie">
+          <option value="video">Video</option>
+          <option value="valg">Valg (radio buttons)</option>
+          <option value="tekst">Tekst</option>
+        </select>
 
-    <label for="Opgavetype">Opgavetype:</label>
-    <select id="Opgavetype" name="Opgavetype">
-      <option value="essay-refleksion">Essay / Refleksion</option>
-      <option value="multiple-choice">Multiple Choice</option>
-      <option value="case">Case</option>
-      <option value="scenarieopgave">Scenarieopgave</option>
-      <option value="essay">Essay</option>
-    </select>
+        <label for="Tid">Tid i minutter:</label>
+        <input name="Tid" id="Tid" type="number" min="1" />
+        <button type="submit">Opret</button>
+      </form>
 
-    <label for="Medie">Medie:</label>
-    <select id="Medie" name="Medie">
-      <option value="video">Video</option>
-      <option value="valg">Valg (radio buttons)</option>
-      <option value="tekst">Tekst</option>
-    </select>
+      <!-- Opdater opgaver -->
+      <form v-show="visibleCard === 'card2-4'" @submit="handlePatchTask" class="card3">
+        <label for="taskId">Opgave ID</label>
+        <input type="text" name="taskId" placeholder="Enter task ID to update" required />
 
-    <label for="Tid">Tid i minutter:</label>
-    <input name="Tid" id="Tid" type="number" min="1" />
-    <button type="submit">Opret</button>
-  </form>
+        <label for="Spørgsmål">Spørgsmål</label>
+        <input type="text" name="Spørgsmål" placeholder="Indtast nyt spørgsmål" />
 
-<!-- Opdater opgaver -->
-<form @submit="handlePatchTask" class="card">
-  <label for="taskId">Opgave ID</label>
-  <input
-    type="text"
-    name="taskId"
-    placeholder="Enter task ID to update"
-    required
-  />
+        <label for="Kategori">Vælg kategori:</label>
+        <select id="Kategori" name="Kategori">
+          <option value="">-- Vælg ny kategori --</option>
+          <option value="anerkendelse">Anerkendelse</option>
+          <option value="situationsbestemt-ledelse">Situationsbestemt Ledelse</option>
+          <option value="delegering">Delegering</option>
+          <option value="konflikthåndtering">Konflikthåndtering</option>
+          <option value="motivation">Motivation</option>
+          <option value="foelge-mig-ledelse">Følge mig-ledelse</option>
+          <option value="tilpasning">Tilpasning</option>
+          <option value="udvikling">Udvikling</option>
+          <option value="tryghed">Tryghed</option>
+          <option value="kommunikation">Kommunikation</option>
+        </select>
 
-  <label for="Spørgsmål">Spørgsmål</label>
-  <input type="text" name="Spørgsmål" placeholder="Indtast nyt spørgsmål" />
+        <label for="Kompetencetype">Kompetencetype:</label>
+        <select id="Kompetencetype" name="Kompetencetype">
+          <option value="">-- Vælg ny kompetencetype --</option>
+          <option value="motivation-kommunikation">Motivation / Kommunikation</option>
+          <option value="beslutningstagning">Beslutningstagning</option>
+          <option value="udvikling-af-andre">Udvikling af andre</option>
+          <option value="relationel-ledelse">Relationel ledelse</option>
+          <option value="lederskab-samarbejde">Lederskab / Samarbejde</option>
+          <option value="eksempelgivende-ledelse">Eksempelgivende ledelse</option>
+          <option value="situationsforstaelse">Situationsforståelse</option>
+          <option value="mentorrolle-delegering">Mentorrolle / Delegering</option>
+          <option value="planlaegning-kommunikation">Planlægning / Kommunikation</option>
+          <option value="empati-strategi">Empati / Strategi</option>
+        </select>
 
-  <label for="Kategori">Vælg kategori:</label>
-  <select id="Kategori" name="Kategori">
-    <option value="">-- Vælg ny kategori --</option>
-    <option value="anerkendelse">Anerkendelse</option>
-    <option value="situationsbestemt-ledelse">Situationsbestemt Ledelse</option>
-    <option value="delegering">Delegering</option>
-    <option value="konflikthåndtering">Konflikthåndtering</option>
-    <option value="motivation">Motivation</option>
-    <option value="foelge-mig-ledelse">Følge mig-ledelse</option>
-    <option value="tilpasning">Tilpasning</option>
-    <option value="udvikling">Udvikling</option>
-    <option value="tryghed">Tryghed</option>
-    <option value="kommunikation">Kommunikation</option>
-  </select>
+        <label for="Sværhedsgrad">Sværhedsgrad:</label>
+        <select id="Sværhedsgrad" name="Sværhedsgrad">
+          <option value="">-- Vælg ny sværhedsgrad --</option>
+          <option value="let">Let</option>
+          <option value="mellem">Mellem</option>
+          <option value="svaer">Svær</option>
+        </select>
 
-  <label for="Kompetencetype">Kompetencetype:</label>
-  <select id="Kompetencetype" name="Kompetencetype">
-    <option value="">-- Vælg ny kompetencetype --</option>
-    <option value="motivation-kommunikation">Motivation / Kommunikation</option>
-    <option value="beslutningstagning">Beslutningstagning</option>
-    <option value="udvikling-af-andre">Udvikling af andre</option>
-    <option value="relationel-ledelse">Relationel ledelse</option>
-    <option value="lederskab-samarbejde">Lederskab / Samarbejde</option>
-    <option value="eksempelgivende-ledelse">Eksempelgivende ledelse</option>
-    <option value="situationsforstaelse">Situationsforståelse</option>
-    <option value="mentorrolle-delegering">Mentorrolle / Delegering</option>
-    <option value="planlaegning-kommunikation">Planlægning / Kommunikation</option>
-    <option value="empati-strategi">Empati / Strategi</option>
-  </select>
+        <label for="Opgavetype">Opgavetype:</label>
+        <select id="Opgavetype" name="Opgavetype">
+          <option value="">-- Vælg ny opgavetype --</option>
+          <option value="essay-refleksion">Essay / Refleksion</option>
+          <option value="multiple-choice">Multiple Choice</option>
+          <option value="case">Case</option>
+          <option value="scenarieopgave">Scenarieopgave</option>
+          <option value="essay">Essay</option>
+        </select>
 
-  <label for="Sværhedsgrad">Sværhedsgrad:</label>
-  <select id="Sværhedsgrad" name="Sværhedsgrad">
-    <option value="">-- Vælg ny sværhedsgrad --</option>
-    <option value="let">Let</option>
-    <option value="mellem">Mellem</option>
-    <option value="svaer">Svær</option>
-  </select>
+        <label for="Medie">Medie:</label>
+        <select id="Medie" name="Medie">
+          <option value="">-- Vælg nyt medie --</option>
+          <option value="video">Video</option>
+          <option value="valg">Valg (radio buttons)</option>
+          <option value="tekst">Tekst</option>
+        </select>
 
-  <label for="Opgavetype">Opgavetype:</label>
-  <select id="Opgavetype" name="Opgavetype">
-    <option value="">-- Vælg ny opgavetype --</option>
-    <option value="essay-refleksion">Essay / Refleksion</option>
-    <option value="multiple-choice">Multiple Choice</option>
-    <option value="case">Case</option>
-    <option value="scenarieopgave">Scenarieopgave</option>
-    <option value="essay">Essay</option>
-  </select>
+        <label for="Tid">Tid i minutter:</label>
+        <input name="Tid" id="Tid" type="number" min="1" />
 
-  <label for="Medie">Medie:</label>
-  <select id="Medie" name="Medie">
-    <option value="">-- Vælg nyt medie --</option>
-    <option value="video">Video</option>
-    <option value="valg">Valg (radio buttons)</option>
-    <option value="tekst">Tekst</option>
-  </select>
+        <button type="submit">Opdater</button>
+      </form>
 
-  <label for="Tid">Tid i minutter:</label>
-  <input name="Tid" id="Tid" type="number" min="1" />
+      <!-- Slet opgave -->
+      <form v-show="visibleCard === 'card2-4'" @submit="handleDelete" class="card4">
+        <label for="deleteId">Slet specifik opgave</label>
+        <input type="text" name="deleteId" placeholder="Skriv ID på den opgave du vil slette" required />
+        <button type="submit">Slet</button>
+      </form>
 
-  <button type="submit">Opdater</button>
-</form>
+      <form
+        v-show="visibleCard === 'card5'"
+        action="http://localhost:5500/api/admin/register"
+        method="POST"
+        class="card5">
+        <h2>Opret admin</h2>
+        <label for="username">Brugernavn</label>
+        <input type="text" name="username" id="username" />
 
-  <!-- Slet opgave -->
-  <form @submit="handleDelete" class="card">
-    <label for="deleteId">Slet specifik opgave</label>
-    <input 
-      type="text" 
-      name="deleteId"
-      placeholder="Skriv ID på den opgave du vil slette" 
-      required
-    />
-    <button type="submit">Slet</button>
-  </form>
+        <label for="password">Adgangskode</label>
+        <input type="password" name="password" id="password" />
 
-  <form action="http://localhost:5500/api/admin/register" method="POST" class="card">
-    <h2>Opret admin</h2>
-    <label for="username">Brugernavn</label>
-    <input type="text" name="username" id="username" />
-
-    <label for="password">Adgangskode</label>
-    <input type="password" name="password" id="password" />
-
-    <button type="submit">Opret bruger</button>
-    </form>
+        <button type="submit">Opret bruger</button>
+      </form>
+    </div>
+    <div class="footerImg"></div>
+  </div>
 </template>
 
 <style scoped>
+.menu {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f4f4f4;
+}
+
+.title {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  background-color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.title a {
+  color: #8d1b3d;
+  font-size: 1.5rem;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.menuControls {
+  flex: 1;
+  padding: 120px 20px 140px; /* Top: under .title, Bottom: over .footerImg */
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 form {
-  margin: 2rem 0;
-  padding: 1.5rem;
+  width: 90%;
+  max-width: 600px;
+  margin-bottom: 30px;
+  padding: 1.5rem 20px;
   border-radius: 8px;
   background-color: #ffffff;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  margin-bottom: 20px;
 }
 
-h1, form h2 {
-  font-family: 'Arial', sans-serif;
+form h2 {
   color: #333;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  margin-bottom: 0.5rem;
 }
 
 label {
-  font-family: 'Arial', sans-serif;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
   font-weight: 600;
   color: #444;
-  margin-bottom: 0.5rem;
 }
 
 input[type="text"],
@@ -307,30 +382,27 @@ select {
   border-radius: 5px;
   font-size: 1rem;
   background-color: #f9f9f9;
-  margin-bottom: 1rem;
   transition: border-color 0.3s ease;
 }
 
-input[type="text"]:focus,
-input[type="number"]:focus,
+input:focus,
 select:focus {
-  border-color: #0057b7;
+  border-color: #8d1b3d;
   outline: none;
 }
 
 button {
   padding: 0.8rem 1.5rem;
-  background-color: #0057b7;
+  background-color: #8d1b3d;
   color: white;
   border: none;
-  border-radius: 6px;
   font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 button:hover {
-  background-color: #004099;
+  background-color: #551025;
   transform: scale(1.05);
 }
 
@@ -338,15 +410,83 @@ button:focus {
   outline: none;
 }
 
-.card {
-  max-width: 600px;
-  margin: 0 auto;
+.card1,
+.card2,
+.card3,
+.card4,
+.card5 {
+  max-width: 800px;
 }
 
-h1 {
-  text-align: center;
-  font-size: 2.5rem;
-  margin-bottom: 2rem;
+.hamburger {
+  width: 30px;
+  height: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.hamburger span {
+  display: block;
+  height: 4px;
+  background: #8d1b3d;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.hamburger.active span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(6px, -6px);
+}
+
+.navMenu {
+  display: none;
+  position: fixed;
+  top: 100px;
+  left: 0;
+  width: 100%;
+  background: #8d1b3d;
+  padding: 20px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+}
+
+.navMenu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.navMenu ul li a {
+  color: white;
+  text-decoration: none;
+  display: block;
+  padding: 15px 20px 15px 10px;
+  margin: 0 40px 0 0;
+  border-bottom: 1px solid #ffffff;
+  transition: background-color 0.2s;
+}
+
+.navMenu ul li a:hover {
+  background-color: #a12a4d;
+}
+
+.navMenu.show {
+  display: block;
+}
+
+/* Footer */
+.footerImg {
+  height: 120px;
+  background: url("../assets/adminFooter.jpg") center/cover no-repeat;
+  flex-shrink: 0;
 }
 </style>
-
