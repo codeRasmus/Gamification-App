@@ -18,10 +18,19 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import { io } from "socket.io-client";
 
+const router = useRouter();
 const socket = io("http://localhost:5500");
+
+onMounted(() => {
+  socket.on("receive-task", (task) => {
+    localStorage.setItem("task", JSON.stringify(task));
+    router.push("/task");
+  });
+});
 
 const sessionInput = ref("");
 const joined = ref(false);
@@ -30,15 +39,17 @@ const error = ref("");
 const teams = ["Alpha", "Beta", "Delta", "Sigma", "Omega"];
 
 function joinSession() {
-  socket.emit("join-team", {
-    sessionId: sessionInput.value,
-    teamName: "", // sendes tomt – vi vælger team bagefter
-  });
   joined.value = true;
 }
 
 function chooseTeam(team) {
   error.value = "";
+
+  if (!team) {
+    socket.emit("error", "Team-navn mangler");
+    return;
+  }
+
   socket.emit("join-team", {
     sessionId: sessionInput.value,
     teamName: team,
@@ -47,15 +58,11 @@ function chooseTeam(team) {
 
 socket.on("joined", ({ teamName }) => {
   selectedTeam.value = teamName;
+  localStorage.setItem("selectedTeam", teamName);
+  localStorage.setItem("sessionId", sessionInput.value);
 });
 
 socket.on("error", (msg) => {
   error.value = msg;
-});
-
-socket.on("receive-task", (task) => {
-  console.log("Din opgave:", task);
-  localStorage.setItem("task", JSON.stringify(task));
-  router.push("/task");
 });
 </script>

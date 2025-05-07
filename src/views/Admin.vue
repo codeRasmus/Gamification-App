@@ -19,6 +19,12 @@ onMounted(() => {
       router.push("/login");
     });
   }
+  const hamburger = document.querySelector(".hamburger");
+  if (hamburger) {
+    hamburger.addEventListener("click", function () {
+      toggleMenu(this);
+    });
+  }
 });
 
 const handleRegister = async (event) => {
@@ -114,15 +120,6 @@ function toggleMenu(el) {
   document.querySelector(".navMenu").classList.toggle("show");
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const hamburger = document.querySelector(".hamburger");
-  if (hamburger) {
-    hamburger.addEventListener("click", function () {
-      toggleMenu(this);
-    });
-  }
-});
-
 const handleGetTask = async (event) => {
   event.preventDefault();
 
@@ -212,12 +209,11 @@ const handleFileUpload = async (event) => {
     const csvText = e.target.result;
 
     try {
-
       const response = await fetch("http://localhost:5500/api/tasks/upload", {
         method: "POST",
         headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-        "Content-Type": "text/csv",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "text/csv",
         },
         body: csvText,
       });
@@ -237,7 +233,6 @@ const handleFileUpload = async (event) => {
 
   reader.readAsText(fileInput); // Læs filen som tekst
 };
-
 </script>
 
 <template>
@@ -260,7 +255,7 @@ const handleFileUpload = async (event) => {
       </ul>
     </nav>
     <div class="menuControls">
-      <div v-show="visibleCard === 'card'"><Host /></div>
+      <div v-show="visibleCard === 'card'" class="w-full"><Host /></div>
       <form v-show="visibleCard === 'card1'" action="http://localhost:5500/api/tasks" method="GET" class="card">
         <label for="">Hent alle opgaver</label>
         <button type="submit">Hent</button>
@@ -332,7 +327,6 @@ const handleFileUpload = async (event) => {
         <input name="Tid" id="Tid" type="number" min="1" />
         <button type="submit">Opret</button>
       </form>
-      
 
       <!-- Opdater opgaver -->
       <form v-show="visibleCard === 'card2-4'" @submit="handlePatchTask" class="card3">
@@ -418,13 +412,13 @@ const handleFileUpload = async (event) => {
       </form>
 
       <!-- Tilføj nyt opgavesæt -->
-       <form v-show="visibleCard === 'card2-4'" @submit="handleFileUpload" class="card">
-      <h2>Upload CSV-fil med nye spørgsmål</h2>
-  
+      <form v-show="visibleCard === 'card2-4'" @submit="handleFileUpload" class="card">
+        <h2>Upload CSV-fil med nye spørgsmål</h2>
+
         <label for="fileInput">Vælg CSV-fil</label>
         <input type="file" id="fileInput" name="tasksFile" accept=".csv" required />
-  
-       <button type="submit">Upload</button>
+
+        <button type="submit">Upload</button>
       </form>
 
       <!-- Opret Admin -->
@@ -444,6 +438,9 @@ const handleFileUpload = async (event) => {
 </template>
 
 <style scoped>
+.w-full {
+  width: 100%;
+}
 .menu {
   display: flex;
   flex-direction: column;

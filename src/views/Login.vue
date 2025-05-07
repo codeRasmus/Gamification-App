@@ -27,19 +27,16 @@ onMounted(() => {
 
       if (res.ok) {
         localStorage.setItem("token", data.token);
-        statusMessage.style.display = "inline";
-        statusMessage.style.color = "green";
-        statusMessage.innerHTML = "Login godkendt";
         setTimeout(() => {
           router.push("/admin");
-        }, 2000);
+        }, 1000);
       } else {
-        alert(data.message || "Login failed.");
+        statusMessage.style.display = "inline";
+        statusMessage.style.color = "red";
+        statusMessage.innerHTML = "Brugernavn eller adgangskode er forkert";
       }
     } catch (err) {
-      statusMessage.style.display = "inline";
-      statusMessage.style.color = "red";
-      statusMessage.innerHTML = "Brugernavn eller adgangskode er forkert";
+      console.error(err);
     }
   });
 });
