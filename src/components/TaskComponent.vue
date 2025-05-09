@@ -1,20 +1,13 @@
 <script setup>
-import { ref, onMounted } from "vue";
-
-const task = ref(null);
-onMounted(() => {
-  const stored = localStorage.getItem("task");
-  if (stored) {
-    task.value = JSON.parse(stored);
-  }
-});
+const props = defineProps({ task: Object });
+console.log("TaskComponent modtog:", props.task);
 </script>
 
 <template>
   <div v-if="task">
-    <h1>{{ task.Spørgsmål || task.title }}</h1>
-    <p>Kategori: {{ task.Kategori || task.category }}</p>
-    <p>Tid: {{ task.Tid || task.timeLimit }} minutter</p>
-    <p>Type: {{ task.Opgavetype || task.type }}</p>
+    <h1>{{ task.Spørgsmål || task.title || 'Default Titel' }}</h1>
+    <p>Kategori: {{ task.Kategori || task.category || 'Ingen kategori' }}</p>
+    <p>Tid: {{ task.Tid || task.timeLimit || 0 }} minutter</p>
+    <p>Type: {{ task.Opgavetype || task.type || 'Ukendt type' }}</p>
   </div>
 </template>
