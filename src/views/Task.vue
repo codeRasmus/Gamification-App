@@ -1,48 +1,40 @@
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
+import { useSessionStore } from "../stores/session";
 import TaskComponent from "../components/TaskComponent.vue";
 import Countdown from "../components/Countdown.vue";
-import { io } from "socket.io-client";
+import socket from "../socket";
 
-const socket = io("http://localhost:5500");
+const session = useSessionStore();
 
 const selectedTeam = ref(localStorage.getItem("selectedTeam"));
 const sessionId = localStorage.getItem("sessionId");
 
-const seconds = ref(null);
-const taskAnswer = ref('');
-const currentTask = ref({});
+const currentTask = computed(() => session.currentTask);
+const taskAnswer = computed(() => session.taskAnswer);
+const seconds = computed(() => session.seconds);
+const currentIndex = computed(() => session.currentIndex);
+const noMoreTasks = computed(() => !currentTask.value && seconds.value !== null);
+const allAnswers = computed(() => JSON.parse(localStorage.getItem("allAnswers") || "[]"));
+
 let intervalId = null;
-
-watch(currentTask, (newTask, oldTask) => {
-  console.log("currentTask changed:", newTask);
-});
-
-const storedTask = localStorage.getItem("task");
-if (storedTask) {
-  currentTask.value = JSON.parse(storedTask);
-}
 
 onMounted(() => {
   if (!selectedTeam.value || !sessionId) return;
+
+  session.restoreTaskFromStorage();
 
   const fetchStatus = () => {
     socket.emit("get-session-status", { sessionId });
   };
 
   socket.on("session-status", (scoreboard) => {
-    const serverTime = scoreboard[selectedTeam.value]?.time;
-    if (typeof serverTime === "number") {
-      seconds.value = serverTime;
-    }
+    session.updateTimerFromScoreboard(scoreboard, selectedTeam.value);
   });
 
-  socket.on("next-task", (nextTask) => {
-    taskAnswer.value = "";
-    seconds.value = nextTask.Tid * 60;
-    currentTask.value = nextTask;
-    localStorage.setItem("task", JSON.stringify(nextTask));
-    console.log("Next task received:", nextTask);
+  socket.on("receive-task", (task) => {
+    console.log("🔥 Modtaget ny opgave:", task);
+    if (task?.Tid) session.setCurrentTask(task);
   });
 
   fetchStatus();
@@ -53,62 +45,14 @@ onUnmounted(() => {
   if (intervalId) clearInterval(intervalId);
 });
 
-const saveAnswer = (answer) => {
-  if (answer && currentTask.value && currentTask.value._id) {
-    const allAnswers = JSON.parse(localStorage.getItem("allAnswers")) || [];
-
-    allAnswers.push({
-      taskId: currentTask.value._id,
-      answer: answer,
-    });
-
-    localStorage.setItem("allAnswers", JSON.stringify(allAnswers));
-    console.log("Svar gemt i localStorage");
-
-    socket.emit("next-task", { sessionId, teamName: selectedTeam.value });
-    taskAnswer.value = "";
-  }
+const saveAnswerAndContinue = () => {
+  session.saveAnswer(selectedTeam.value, sessionId);
 };
 
-const submitAllAnswers = () => {
-  const allAnswers = JSON.parse(localStorage.getItem("allAnswers")) || [];
-
-  if (allAnswers.length > 0) {
-    const submission = {
-      sessionId: sessionId,
-      teamName: selectedTeam.value,
-      answers: allAnswers,
-      submittedAt: Date.now(),
-    };
-
-    fetch("http://localhost:5500/api/submission", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(submission),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Besvarelser indsendt:", data);
-        localStorage.removeItem("allAnswers");
-      })
-      .catch((err) => {
-        console.error("Fejl ved indsendelse af svar:", err);
-      });
-  }
+const submitAll = () => {
+  session.submitAllAnswers(sessionId, selectedTeam.value);
+  localStorage.removeItem("allAnswers");
 };
-
-socket.on("receive-task", (task) => {
-  console.log(task);
-  if (!task || !task.Tid) {
-    console.log("Invalid task object:", task);
-    return;
-  }
-
-  taskAnswer.value = ""; 
-  seconds.value = task.Tid * 60;
-  currentTask.value = task;
-  localStorage.setItem("task", JSON.stringify(task));  
-});
 </script>
 
 <template>
@@ -117,48 +61,47 @@ socket.on("receive-task", (task) => {
       <img src="../assets/hjv_logo_hvid.png" />
       <h1>Militeam</h1>
       <div class="countdown-wrapper">
-        <Countdown v-if="seconds > 0 && seconds !== null" :seconds="seconds" />
+        <Countdown v-if="seconds > 0 && seconds !== null" :seconds="seconds" :key="seconds" />
         <div v-else class="placeholder"></div>
       </div>
     </div>
 
-    <div v-if="seconds > 0">
-    
-<TaskComponent
-  v-if="currentTask && (currentTask.Spørgsmål || currentTask.title)"
-  :task="currentTask"
-  :key="currentTask._id"
-/>
-      <div v-else>
-        <p>Ingen opgave fundet.</p> 
-      </div>
-     
-      <div>
-        <input 
-          v-model="taskAnswer" 
-          type="text" 
-          placeholder="Skriv din besvarelse her" 
-          style="margin-top: 20px; padding: 5px; width: 100%;" 
-        />
-      </div>
+    <div v-if="seconds > 0 && currentTask">
+      <p>🆔 task ID: {{ currentTask._id }}</p>
+      <TaskComponent :task="currentTask" :key="session.componentKey" />
+      <input v-model="session.taskAnswer" type="text" placeholder="Skriv din besvarelse her"
+        style="margin-top: 20px; padding: 5px; width: 100%;" />
+      <button @click="saveAnswerAndContinue" style="margin-top: 10px;">
+        Aflever besvarelse
+      </button>
+    </div>
+
+    <div v-else-if="noMoreTasks">
+      <h2>✔️ Du har besvaret alle opgaver!</h2>
+      <h3>Dine svar:</h3>
+      <ul>
+        <li v-for="(ans, index) in allAnswers" :key="index">
+          📝 Opgave {{ index + 1 }}: "{{ ans.answer }}"
+        </li>
+      </ul>
+      <button @click="submitAll" style="margin-top: 20px;">
+        Indsend alle besvarelser
+      </button>
     </div>
 
     <div v-else-if="seconds === 0">
-      <p style="text-align: center; font-weight: bold; color: #8d1b3d">Tiden er udløbet!</p>
+      <p style="text-align: center; font-weight: bold; color: #8d1b3d">
+        Tiden er udløbet!
+      </p>
     </div>
 
-    <div v-if="seconds > 0">
-      <button @click="saveAnswer(taskAnswer)" style="margin-top: 10px;">Aflever besvarelse</button>
-    </div>
-
-    <div>
-      <!-- Skal først være synlig ved sidste besvarelse -->
-      <button @click="submitAllAnswers" style="margin-top: 20px;">Aflever alle besvarelser</button>
+    <div v-if="seconds > 0 && currentTask">
+      <button @click="session.submitAllAnswers(sessionId, selectedTeam)" style="margin-top: 20px;">
+        Aflever alle besvarelser
+      </button>
     </div>
   </div>
 </template>
-
-
 
 <style scoped>
 .header {

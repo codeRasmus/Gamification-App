@@ -1,13 +1,30 @@
 <script setup>
-const props = defineProps({ task: Object });
-console.log("TaskComponent modtog:", props.task);
+import { ref, watch } from 'vue';
+
+const props = defineProps({
+  task: {
+    type: Object,
+    required: true
+  }
+});
+
+const taskData = ref({ ...props.task });
+
+watch(
+  () => props.task,
+  (newVal) => {
+    taskData.value = { ...newVal };
+    console.log("🔄 TaskComponent opdateret med task ID:", newVal?._id);
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
-  <div v-if="task">
-    <h1>{{ task.Spørgsmål || task.title || 'Default Titel' }}</h1>
-    <p>Kategori: {{ task.Kategori || task.category || 'Ingen kategori' }}</p>
-    <p>Tid: {{ task.Tid || task.timeLimit || 0 }} minutter</p>
-    <p>Type: {{ task.Opgavetype || task.type || 'Ukendt type' }}</p>
+  <div v-if="taskData">
+    <h1>{{ taskData.Spørgsmål || taskData.title || 'Default Titel' }}</h1>
+    <p>Kategori: {{ taskData.Kategori || taskData.category || 'Ingen kategori' }}</p>
+    <p>Tid: {{ taskData.Tid || taskData.timeLimit || 0 }} minutter</p>
+    <p>Type: {{ taskData.Opgavetype || taskData.type || 'Ukendt type' }}</p>
   </div>
 </template>

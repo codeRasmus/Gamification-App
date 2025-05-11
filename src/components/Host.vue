@@ -1,32 +1,28 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
-import { io } from "socket.io-client";
+import { onMounted, onBeforeUnmount, computed, ref } from "vue";
+import socket from "../socket";
+import { useSessionStore } from "../stores/session";
+const session = useSessionStore();
 
-const socket = io("http://localhost:5500");
-
-const sessionId = ref(null);
-const tasks = ref([]);
-const selectedTaskIds = ref([]);
-const teamStatus = ref({
-  Alpha: false,
-  Beta: false,
-  Delta: false,
-  Sigma: false,
-  Omega: false,
-});
-const scoreboard = ref({});
 const intervalId = ref(null);
-const gameStarted = ref(false);
-const gameCreated = ref(false);
+
+// Computed proxies for reactive store state
+const sessionId = computed(() => session.sessionId);
+const tasks = computed(() => session.tasks);
+const selectedTaskIds = computed(() => session.selectedTaskIds);
+const teamStatus = computed(() => session.teamStatus);
+const scoreboard = computed(() => session.scoreboard);
+const gameStarted = computed(() => session.gameStarted);
+const gameCreated = computed(() => session.gameCreated);
 
 async function fetchTasks() {
   const res = await fetch("http://localhost:5500/api/tasks");
   const data = await res.json();
-  tasks.value = data;
+  session.setTasks(data);
 }
 
 function getSessionStatus() {
-  socket.emit("get-session-status", { sessionId: sessionId.value });
+  socket.emit("get-session-status", { sessionId: session.sessionId });
 }
 
 function formatTime(seconds) {
@@ -37,24 +33,20 @@ function formatTime(seconds) {
 }
 
 function createGame() {
-  const id = Math.floor(100000 + Math.random() * 900000).toString();
-  sessionId.value = id;
-  socket.emit("host-join", { sessionId: id });
-  gameCreated.value = true;
+  session.createSession();
+  socket.emit("host-join", { sessionId: session.sessionId });
   fetchTasks();
 }
 
 function startGame() {
-  if (selectedTaskIds.value.length === 0) {
+  if (!session.startGame()) {
     alert("Vælg mindst én opgave!");
     return;
   }
 
-  gameStarted.value = true;
-
   socket.emit("start-game", {
-    sessionId: sessionId.value,
-    selectedTaskIds: selectedTaskIds.value,
+    sessionId: session.sessionId,
+    selectedTaskIds: session.selectedTaskIds,
   });
 
   intervalId.value = setInterval(() => {
@@ -65,19 +57,16 @@ function startGame() {
 }
 
 onBeforeUnmount(() => {
-  if (intervalId.value) {
-    clearInterval(intervalId.value);
-  }
+  if (intervalId.value) clearInterval(intervalId.value);
 });
 
+// Socket listeners
 socket.on("session-status", (data) => {
-  scoreboard.value = data;
+  session.updateScoreboard(data);
 });
 
 socket.on("team-update", (updatedTeams) => {
-  for (const team in teamStatus.value) {
-    teamStatus.value[team] = !!updatedTeams[team];
-  }
+  session.updateTeamStatus(updatedTeams);
 });
 </script>
 
@@ -85,6 +74,7 @@ socket.on("team-update", (updatedTeams) => {
   <div class="container">
     <h2 class="title" v-show="!gameCreated">Start nyt spil</h2>
     <button v-if="!sessionId" @click="createGame">Åbn nyt spil</button>
+
     <div class="sessionDetails" v-show="gameCreated && !gameStarted">
       <h2>Kode: {{ sessionId }}</h2>
 
@@ -93,7 +83,8 @@ socket.on("team-update", (updatedTeams) => {
         <ul>
           <li v-for="task in tasks" :key="task._id">
             <label>
-              <input type="checkbox" :value="task._id" v-model="selectedTaskIds" />
+              <input type="checkbox" :value="task._id" :checked="selectedTaskIds.includes(task._id)"
+                @change="session.toggleTaskSelection(task._id)" />
               {{ task.Spørgsmål || task.title }}
             </label>
           </li>
