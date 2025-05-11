@@ -59,6 +59,15 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.loginComponent {
+  display: flex;
+  justify-content: center;
+  align-items: center; 
+  flex-direction: column;
+  height: 100vh;
+  background: #551025;
+  background: linear-gradient(0deg, rgba(85, 16, 37, 1) 0%, rgba(141, 27, 61, 1) 100%);
+}
 form {
   margin: 2rem 0;
   padding: 1.5rem;
