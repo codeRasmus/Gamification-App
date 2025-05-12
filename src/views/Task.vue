@@ -94,9 +94,9 @@ const submitAll = () => {
     </div>
 
     <div class="task-container">
-      <div v-if="seconds > 0 && currentTask && !session.gameCompleted" class="task-section">
+      <div v-if="seconds >= 0 && currentTask && !session.gameCompleted" class="task-section">
         <TaskComponent :task="currentTask" :key="session.componentKey" />
-        <input v-model="session.taskAnswer" type="text" placeholder="Skriv din besvarelse her" />
+        <input v-model="session.taskAnswer" type="text" placeholder="Skriv din besvarelse her" class="answerInput" />
         <button @click="saveAnswerAndContinue">Aflever besvarelse</button>
       </div>
 
@@ -168,25 +168,28 @@ const submitAll = () => {
 .task-container {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  align-items: center;
-  margin: 2rem;
 }
 
 /* Task Section */
+
+.task-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 .task-section p {
   font-size: 1.2rem;
   color: #333;
 }
 
 .task-section input {
-  padding: 0.8rem;
   border: 1px solid #ccc;
   font-size: 1rem;
   background-color: #f9f9f9;
   margin-top: 20px;
-  width: 100%;
+  width: 80%;
   transition: border-color 0.3s ease;
+  padding: 10px;
 }
 
 .task-section input:focus {

@@ -75,7 +75,7 @@ function chooseTeam(team) {
     teamName: team,
   });
 
-  console.log("📤 Join request sendt:", session.sessionId, team);
+  console.log("Join request sendt:", session.sessionId, team);
 }
 </script>
 
@@ -83,6 +83,7 @@ function chooseTeam(team) {
   <div class="join-session-container">
     <h1>Lobby</h1>
     <div v-if="!session.sessionCodeConfirmed" class="container">
+      <p v-if="error" class="error-message">{{ error }}</p>
       <input v-model="sessionInput" placeholder="Indtast kode" />
       <button @click="joinSession">Join</button>
     </div>
@@ -147,7 +148,6 @@ button {
 
 button:hover {
   background-color: #551025;
-  transform: scale(1.05);
 }
 
 button:focus {
@@ -156,8 +156,15 @@ button:focus {
 
 p {
   color: #e74c3c;
-  font-weight: bold;
   margin-top: 1rem;
+}
+
+.error-message {
+  color: white;
+  font-size: 1.1rem;
+  animation-name: blinkEffect;
+  animation-duration: 0.5s;
+  animation-iteration-count: 2;
 }
 
 .team-selection p {
@@ -165,6 +172,18 @@ p {
   margin-bottom: 1rem;
   font-weight: 600;
   color: white;
+}
+
+@keyframes blinkEffect {
+  0% {
+    color: white;
+  }
+  50% {
+    color: #8d1b3d;
+  }
+  100% {
+    color: white;
+  }
 }
 
 .team-selection button {
