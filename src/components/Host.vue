@@ -80,6 +80,9 @@ socket.on("team-update", (updatedTeams) => {
 
       <div class="task-selection">
         <h3>Vælg opgaver:</h3>
+        <div v-if="tasks.length === 0">
+  <p>Ingen opgaver fundet</p>
+</div>
         <ul>
           <li v-for="task in tasks" :key="task._id">
             <label>
