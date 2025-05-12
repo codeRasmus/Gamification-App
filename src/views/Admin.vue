@@ -1,17 +1,31 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { watch, ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import Host from "../components/Host.vue";
+
 const router = useRouter();
 const visibleCard = ref("card");
+
+const submissions = ref([]);
+const sessions = ref([]);
+const teams = ref([]);
+
+const selectedSession = ref("");
+const selectedTeam = ref("");
+const selectedSubmission = ref(null);
+const filteredTeams = ref([]);
+const filteredSubmissions = ref([]);
+
 function showCard(cardName) {
   visibleCard.value = cardName;
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (!localStorage.getItem("token")) {
     router.push("/login");
+    return;
   }
+
   const logoutBtn = document.getElementById("logout");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
@@ -19,17 +33,78 @@ onMounted(() => {
       router.push("/login");
     });
   }
+
   const hamburger = document.querySelector(".hamburger");
   if (hamburger) {
     hamburger.addEventListener("click", function () {
       toggleMenu(this);
     });
   }
+
+  try {
+    const res = await fetch("http://localhost:5500/api/submission", {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    if (res.ok) {
+      submissions.value = await res.json();
+
+      // Sessions udtrækkes fra submissions
+      sessions.value = [...new Set(submissions.value.map((s) => s.sessionId))];
+
+      // Teams udtrækkes unikt ud fra teamName
+      const uniqueTeams = new Map();
+      submissions.value.forEach((submission) => {
+        if (!uniqueTeams.has(submission.teamName)) {
+          uniqueTeams.set(submission.teamName, {
+            teamName: submission.teamName,
+          });
+        }
+      });
+      teams.value = Array.from(uniqueTeams.values());
+    } else if (res.status === 401) {
+      localStorage.removeItem("token");
+      router.push("/login");
+    } else {
+      alert("Kunne ikke hente submissions");
+    }
+  } catch (error) {
+    console.error("Fejl ved hentning af submissions:", error);
+    alert("Netværksfejl ved hentning af data.");
+  }
 });
+
+// Filtrer teams ud fra session
+watch([selectedSession, teams, submissions], ([session, allTeams, allSubmissions]) => {
+  if (session) {
+    filteredTeams.value = allTeams.filter((team) =>
+      allSubmissions.some((submission) => submission.sessionId === session && submission.teamName === team.teamName)
+    );
+  } else {
+    filteredTeams.value = [];
+  }
+});
+
+// Filtrer submissions ud fra valgt team og session
+watch([selectedTeam, selectedSession, teams, submissions], ([teamName, sessionId, _allTeams, allSubmissions]) => {
+  if (teamName) {
+    filteredSubmissions.value = allSubmissions.filter(
+      (sub) => sub.teamName === teamName && sub.sessionId === sessionId
+    );
+  } else {
+    filteredSubmissions.value = [];
+  }
+});
+
+function toggleMenu(el) {
+  el.classList.toggle("active");
+  document.querySelector(".navMenu").classList.toggle("show");
+}
 
 const handleRegister = async (event) => {
   event.preventDefault();
-
   const username = event.target.username.value;
   const password = event.target.password.value;
 
@@ -115,42 +190,6 @@ const handleDeleteAllTasks = async (event) => {
   }
 };
 
-function toggleMenu(el) {
-  el.classList.toggle("active");
-  document.querySelector(".navMenu").classList.toggle("show");
-}
-
-const handleGetTask = async (event) => {
-  event.preventDefault();
-
-  const taskId = event.target.taskId.value;
-
-  if (taskId.trim()) {
-    try {
-      const response = await fetch(`http://localhost:5500/api/tasks/${taskId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        method: "GET",
-      });
-
-      if (response.ok) {
-        const task = await response.json();
-        console.log(task);
-      } else if (response.status === 401) {
-        localStorage.removeItem("token");
-        router.push("/login");
-      } else {
-        alert("Error fetching task");
-      }
-    } catch (error) {
-      alert("Error fetching task: " + error.message);
-    }
-  } else {
-    alert("Please provide a valid task ID");
-  }
-};
-
 const handlePatchTask = async (event) => {
   event.preventDefault();
 
@@ -223,15 +262,14 @@ const handleFileUpload = async (event) => {
       if (response.ok) {
         alert("Spørgsmålene blev opdateret!");
       } else {
-        alert(data.message || "Fejl ved upload af spørgsmål");
+        alert(data.message || "Fejl ved fil-upload");
       }
     } catch (error) {
-      console.error("Fejl under CSV til JSON konvertering:", error);
-      alert("Fejl i filbehandling.");
+      alert("Fejl ved upload af fil: " + error.message);
     }
   };
 
-  reader.readAsText(fileInput); // Læs filen som tekst
+  reader.readAsText(fileInput);
 };
 </script>
 
@@ -249,8 +287,13 @@ const handleFileUpload = async (event) => {
       <ul>
         <li><a href="#" @click.prevent="showCard('card')">Game</a></li>
         <li><a href="#" @click.prevent="showCard('card1')">Se opgaver</a></li>
-        <li><a href="#" @click.prevent="showCard('card2-4')">Administrer Opgaver</a></li>
+        <li>
+          <a href="#" @click.prevent="showCard('card2-4')">Administrer Opgaver</a>
+        </li>
         <li><a href="#" @click.prevent="showCard('card5')">Opret Admin</a></li>
+        <li>
+          <a href="#" @click.prevent="showCard('card6')">Se besvarelser</a>
+        </li>
         <li><a href="#" id="logout">Log ud</a></li>
       </ul>
     </nav>
@@ -431,6 +474,35 @@ const handleFileUpload = async (event) => {
         <input type="password" name="password" id="password" />
 
         <button type="submit">Opret bruger</button>
+      </form>
+      <form v-show="visibleCard === 'card6'" class="card6">
+        <h2>Hent besvarelser</h2>
+
+        <label for="session">Vælg session:</label>
+        <select id="session" v-model="selectedSession">
+          <option disabled value="">-- Vælg session --</option>
+          <option v-for="session in sessions" :key="session" :value="session">
+            {{ session }}
+          </option>
+        </select>
+
+        <label for="team">Vælg hold:</label>
+        <select id="team" v-model="selectedTeam" :disabled="!selectedSession">
+          <option disabled value="">-- Vælg hold --</option>
+          <option v-for="team in filteredTeams" :key="team.teamId" :value="team.teamId">
+            {{ team.teamName }}
+          </option>
+        </select>
+
+        <label for="submission">Vælg besvarelse:</label>
+        <select id="submission" v-model="selectedSubmission" :disabled="!selectedTeam">
+          <option disabled value="">-- Vælg besvarelse --</option>
+          <option v-for="submission in filteredSubmissions" :key="submission._id" :value="submission._id">
+            {{ submission._id }}
+          </option>
+        </select>
+
+        <button type="submit" :disabled="!selectedSubmission">Hent</button>
       </form>
     </div>
     <div class="footerImg"></div>

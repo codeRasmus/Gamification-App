@@ -23,6 +23,8 @@ export const useSessionStore = defineStore("session", {
     currentIndex: 0,
     componentKey: 0,
     gameCompleted: false,
+    sessionCodeConfirmed: false,
+    selectedTeamName: null,
   }),
 
   actions: {
@@ -31,9 +33,7 @@ export const useSessionStore = defineStore("session", {
     },
     toggleTaskSelection(taskId) {
       if (this.selectedTaskIds.includes(taskId)) {
-        this.selectedTaskIds = this.selectedTaskIds.filter(
-          (id) => id !== taskId
-        );
+        this.selectedTaskIds = this.selectedTaskIds.filter((id) => id !== taskId);
       } else {
         this.selectedTaskIds.push(taskId);
       }
@@ -88,13 +88,13 @@ export const useSessionStore = defineStore("session", {
     },
 
     saveAnswer(teamName, sessionId) {
-      if (!this.taskAnswer || !this.currentTask || !this.currentTask._id)
-        return;
+      if (!this.taskAnswer || !this.currentTask || !this.currentTask._id) return;
 
       const allAnswers = JSON.parse(localStorage.getItem("allAnswers")) || [];
-
+      console.log("💾 Gemmer svar med spørgsmål:", this.currentTask.Spørgsmål, this.taskAnswer);
       allAnswers.push({
         taskId: this.currentTask._id,
+        question: this.currentTask.Spørgsmål || this.currentTask.title || "Ukendt spørgsmål",
         answer: this.taskAnswer,
       });
 
@@ -145,6 +145,13 @@ export const useSessionStore = defineStore("session", {
       if (taskList.length > 0) {
         this.setCurrentTask(taskList[0]);
       }
+    },
+    setJoinedTeam(teamName) {
+      this.selectedTeamName = teamName;
+      localStorage.setItem("selectedTeam", teamName);
+      localStorage.setItem("sessionId", this.sessionId);
+      localStorage.removeItem("task");
+      localStorage.removeItem("allAnswers");
     },
   },
 });

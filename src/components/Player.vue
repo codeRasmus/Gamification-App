@@ -2,12 +2,11 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import socket from "../socket";
+import { useSessionStore } from "../stores/session";
 
 const router = useRouter();
-
+const session = useSessionStore();
 const sessionInput = ref("");
-const joined = ref(false);
-const selectedTeam = ref(null);
 const error = ref("");
 const teams = ["Alpha", "Beta", "Delta", "Sigma", "Omega"];
 
@@ -18,7 +17,9 @@ socket.on("connect", () => {
 });
 
 socket.on("joined", ({ teamName }) => {
-  selectedTeam.value = teamName;
+  session.setJoinedTeam(teamName);
+  localStorage.removeItem("task");
+  localStorage.removeItem("allAnswers");
   localStorage.setItem("selectedTeam", teamName);
   localStorage.setItem("sessionId", sessionInput.value);
   console.log("✅ Joined team:", teamName);
@@ -37,36 +38,56 @@ socket.on("error", (msg) => {
   console.error("❌ Fejl:", msg);
 });
 
+socket.on("session-valid", () => {
+  session.sessionCodeConfirmed = true;
+  console.log("✅ Session eksisterer");
+});
+
+socket.on("session-not-found", () => {
+  error.value = "Session findes ikke. Tjek den 6-cifrede kode.";
+  session.sessionCodeConfirmed = false;
+});
+
 function joinSession() {
-  joined.value = true;
+  if (!sessionInput.value || sessionInput.value.length !== 6) {
+    error.value = "Indtast en gyldig 6-cifret kode";
+    return;
+  }
+
+  error.value = "";
+  // Gem midlertidigt
+  session.sessionId = sessionInput.value;
+
+  // Emit validering til backend
+  socket.emit("validate-session", { sessionId: sessionInput.value });
 }
 
 function chooseTeam(team) {
   error.value = "";
 
   if (!team) {
-    socket.emit("error", "Team-navn mangler");
+    error.value = "Team-navn mangler";
     return;
   }
 
   socket.emit("join-team", {
-    sessionId: sessionInput.value,
+    sessionId: session.sessionId,
     teamName: team,
   });
 
-  console.log("📤 Join request sendt:", sessionInput.value, team);
+  console.log("📤 Join request sendt:", session.sessionId, team);
 }
 </script>
 
 <template>
   <div class="join-session-container">
     <h1>Lobby</h1>
-    <div v-if="!joined" class="container">
+    <div v-if="!session.sessionCodeConfirmed" class="container">
       <input v-model="sessionInput" placeholder="Indtast kode" />
       <button @click="joinSession">Join</button>
     </div>
 
-    <div v-else-if="!selectedTeam" class="team-selection">
+    <div v-else-if="!session.selectedTeamName" class="team-selection">
       <p>Vælg dit hold</p>
       <button v-for="team in teams" :key="team" @click="chooseTeam(team)">
         {{ team }}
@@ -75,15 +96,12 @@ function chooseTeam(team) {
     </div>
 
     <div v-else>
-      <h2>Du er nu på hold {{ selectedTeam }}</h2>
+      <h2>Du er nu på hold {{ session.selectedTeamName }}</h2>
     </div>
   </div>
 </template>
 
-
-
 <style scoped>
-
 .join-session-container {
   display: flex;
   justify-content: center;
@@ -98,11 +116,10 @@ h1 {
   font-weight: 300;
 }
 
-
 input {
   padding: 1rem;
   border: 1px solid #ccc;
-  
+
   font-size: 1rem;
   background-color: #ffffff;
   margin-bottom: 1.5rem;
@@ -114,7 +131,6 @@ input:focus {
   border-color: #8d1b3d;
   outline: none;
 }
-
 
 button {
   padding: 1rem 2rem;
@@ -138,13 +154,11 @@ button:focus {
   outline: none;
 }
 
-
 p {
   color: #e74c3c;
   font-weight: bold;
   margin-top: 1rem;
 }
-
 
 .team-selection p {
   font-size: 1.2rem;
@@ -167,7 +181,6 @@ p {
   gap: 1rem;
   align-items: center;
 }
-
 
 h2 {
   color: #2ecc71;

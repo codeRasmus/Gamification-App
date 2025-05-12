@@ -1,84 +1,63 @@
 <template>
   <div>
     <h1 v-if="!teamName">Vælg hold</h1>
-    <h1 v-if="teamName">Joined as {{ teamName }}</h1>
+    <h1 v-else>Joined as {{ teamName }}</h1>
+
     <div v-if="!teamName">
-      <button @click="joinTeam('Alpha')">Hold Alpha</button>
-      <button @click="joinTeam('Beta')">Hold Beta</button>
-      <button @click="joinTeam('Delta')">Hold Delta</button>
-      <button @click="joinTeam('Sigma')">Hold Sigma</button>
-      <button @click="joinTeam('Omega')">Hold Omega</button>
+      <input v-model="sessionIdInput" placeholder="Indtast sessionskode (fx 123456)" />
+      <div style="margin-top: 10px">
+        <button @click="joinTeam('Alpha')">Hold Alpha</button>
+        <button @click="joinTeam('Beta')">Hold Beta</button>
+        <button @click="joinTeam('Delta')">Hold Delta</button>
+        <button @click="joinTeam('Sigma')">Hold Sigma</button>
+        <button @click="joinTeam('Omega')">Hold Omega</button>
+      </div>
     </div>
+
     <div v-if="error" class="error">{{ error }}</div>
   </div>
 </template>
 
-<script>
-import io from "socket.io-client";
+<script setup>
+import { ref, onMounted } from "vue";
+import socket from "../socket"; // ✅ din socket.js klient
 
-export default {
-  data() {
-    return {
-      socket: null,
-      teamName: null,
-      sessionId: null,
-      error: null,
-    };
-  },
-  mounted() {
-    this.socket = io("http://localhost:5500");
+const sessionIdInput = ref("");
+const teamName = ref(null);
+const sessionId = ref(null);
+const error = ref(null);
 
-    this.socket.on("joined", (data) => {
-      this.teamName = data.teamName;
-      this.sessionId = data.sessionId;
-      this.error = null;
-    });
+onMounted(() => {
+  socket.on("joined", ({ teamName: team, sessionId: id }) => {
+    teamName.value = team;
+    sessionId.value = id;
+    error.value = null;
+    sessionStorage.setItem("sessionId", id);
+    sessionStorage.setItem("team", team);
+  });
 
-    this.socket.on("game_start", (data) => {
-      console.log(data.message); 
+  socket.on("game_start", () => {
+    window.location.href = "/Game";
+  });
 
-      
-      this.redirectToGame();
-    });
+  socket.on("error", (message) => {
+    error.value = message;
+    teamName.value = null;
+    sessionId.value = null;
+    sessionStorage.removeItem("sessionId");
+  });
+});
 
-   
-    this.socket.on("error", (message) => {
-      this.error = message;
-      this.teamName = null; 
-      this.sessionId = null; 
-      sessionStorage.removeItem("sessionId"); 
-    });
-  },
-  methods: {
-    joinTeam(team) {
-     
-      if (this.teamName) {
-        this.teamName = null;
-        this.error = null;
-      }
+const joinTeam = (team) => {
+  if (!sessionIdInput.value || sessionIdInput.value.length !== 6) {
+    error.value = "Ugyldig sessionskode. Den skal være 6 cifre.";
+    return;
+  }
 
-      this.sessionId = team;
-      sessionStorage.setItem("team", team);
-
-      
-      this.socket.emit("join-team", {
-        teamName: team,
-        sessionId: team,
-      });
-    },
-    
-    redirectToGame() {
-      sessionStorage.setItem("team", this.teamName);
-
-      // Redirect to the /Game page
-      window.location.href = "/Game"; 
-    },
-  },
-  beforeDestroy() {
-    if (this.socket) {
-      this.socket.disconnect();
-    }
-  },
+  socket.emit("join-team", {
+    teamName: team,
+    sessionId: sessionIdInput.value,
+  });
 };
 </script>
 
@@ -88,5 +67,6 @@ button {
 }
 .error {
   color: red;
+  margin-top: 10px;
 }
 </style>

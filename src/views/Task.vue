@@ -4,15 +4,20 @@ import { useSessionStore } from "../stores/session";
 import TaskComponent from "../components/TaskComponent.vue";
 import Countdown from "../components/Countdown.vue";
 import socket from "../socket";
+import Spinner from "../components/Spinner.vue";
+import { useRouter } from "vue-router";
 
 const session = useSessionStore();
+const router = useRouter();
 
 const selectedTeam = ref(localStorage.getItem("selectedTeam"));
+const showSpinner = ref(false);
+const showThankYou = ref(false);
 const sessionId = localStorage.getItem("sessionId");
 
 const currentTask = computed(() => session.currentTask);
 const taskAnswer = computed(() => session.taskAnswer);
-const seconds = computed(() => session.seconds);
+let seconds = computed(() => session.seconds);
 const currentIndex = computed(() => session.currentIndex);
 const noMoreTasks = computed(() => !currentTask.value && seconds.value !== null);
 const allAnswers = computed(() => JSON.parse(localStorage.getItem("allAnswers") || "[]"));
@@ -37,27 +42,23 @@ onMounted(() => {
     if (task?.Tid) session.setCurrentTask(task);
   });
 
+  socket.on("no-more-tasks", () => {
+    console.log("✅ Modtaget 'no-more-tasks' fra server");
+    session.currentTask = null;
+    session.gameCompleted = true;
+    seconds = null;
+  });
+
   fetchStatus();
   intervalId = setInterval(fetchStatus, 1000);
-
-  checkGameCompletion();
 });
 
-const checkGameCompletion = () => {
-  console.log("Tjekker om spillet er afsluttet, gameCompleted:", session.gameCompleted);
-  console.log("Session currentIndex:", session.currentIndex);
-  console.log("Session taskQueue:", session.taskQueue);
-  const isLastTask = session.currentIndex >= session.taskQueue.length - 1;
-  if (isLastTask) {
-    session.gameCompleted = true;
-  } else {
-    session.gameCompleted = false;
+watch(
+  () => session.gameCompleted,
+  (newValue) => {
+    console.log("Game Completed status changed:", newValue);
   }
-};
-
-watch(() => session.gameCompleted, (newValue) => {
-  console.log("Game Completed status changed:", newValue);
-});
+);
 
 onUnmounted(() => {
   if (intervalId) clearInterval(intervalId);
@@ -65,12 +66,19 @@ onUnmounted(() => {
 
 const saveAnswerAndContinue = () => {
   session.saveAnswer(selectedTeam.value, sessionId);
-  checkGameCompletion();  
 };
 
 const submitAll = () => {
+  showSpinner.value = true;
   session.submitAllAnswers(sessionId, selectedTeam.value);
   localStorage.removeItem("allAnswers");
+  setTimeout(() => {
+    showSpinner.value = false;
+    showThankYou.value = true;
+  }, 2000);
+  setTimeout(() => {
+    router.push("/");
+  }, 6000);
 };
 </script>
 
@@ -86,32 +94,33 @@ const submitAll = () => {
     </div>
 
     <div class="task-container">
-      <div v-if="seconds > 0 && currentTask" class="task-section">
-        <p>🆔 task ID: {{ currentTask._id }}</p>
+      <div v-if="seconds > 0 && currentTask && !session.gameCompleted" class="task-section">
         <TaskComponent :task="currentTask" :key="session.componentKey" />
         <input v-model="session.taskAnswer" type="text" placeholder="Skriv din besvarelse her" />
-        <button @click="saveAnswerAndContinue">
-          Aflever besvarelse
-        </button>
+        <button @click="saveAnswerAndContinue">Aflever besvarelse</button>
       </div>
 
-      <div v-if="session.gameCompleted" class="completed-tasks">
-        <h2>Spillet er afsluttet!</h2>
-        <h3>Dine besvarelser:</h3>
-        <ul>
+      <div v-else-if="session.gameCompleted" class="completed-tasks">
+        <ul v-if="!showThankYou" class="completed-tasks-ul">
+          <h2>Spillet er afsluttet!</h2>
+          <h3>Dine besvarelser:</h3>
           <li v-for="(ans, index) in allAnswers" :key="index">
-            Opgave {{ index + 1 }}: "{{ ans.answer }}"
+            <h4>Svar på: "{{ ans.question }}"</h4>
+            <br />
+            <em>Svar:</em> "{{ ans.answer }}"
           </li>
         </ul>
-        <button @click="submitAll">
-          Indsend alle besvarelser
-        </button>
+        <button v-if="!showSpinner && !showThankYou" @click="submitAll">Indsend alle besvarelser</button>
+
+        <Spinner v-if="showSpinner" />
+
+        <div v-if="showThankYou">
+          <h1 class="thankYou">Tak fordi du spillede med!</h1>
+        </div>
       </div>
 
       <div v-else-if="seconds === 0" class="time-up">
-        <p>
-          Tiden er udløbet!
-        </p>
+        <p>Tiden er udløbet!</p>
       </div>
     </div>
   </div>
@@ -193,31 +202,42 @@ const submitAll = () => {
   font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  margin-top: 10
+  margin-top: 10;
+}
+
+.thankYou {
+  color: #8d1b3d;
+  font-size: 2rem;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-weight: bold;
+  text-align: center;
 }
 
 .completed-tasks {
   background-color: #f1f5f4;
-
   padding: 2rem;
   width: 100%;
   max-width: 600px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  text-align: center;
   animation: fadeIn 0.5s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.completed-tasks h2 {
+.completed-tasks-ul h2 {
   color: #8d1b3d;
   font-size: 2rem;
   margin-bottom: 1rem;
   font-weight: bold;
+  text-align: center;
 }
 
-.completed-tasks h3 {
+.completed-tasks-ul h3 {
   color: #3f5b58;
   font-size: 1.2rem;
   margin-bottom: 1rem;
+  text-align: center;
 }
 
 .completed-tasks ul {
@@ -234,6 +254,8 @@ const submitAll = () => {
   border: 1px solid #ddd;
   font-size: 1rem;
   color: #333;
+  list-style: none;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
 .completed-tasks button {
@@ -243,7 +265,6 @@ const submitAll = () => {
   border: none;
   font-size: 1rem;
   cursor: pointer;
-  border-radius: 6px;
   transition: background-color 0.3s ease;
 }
 
