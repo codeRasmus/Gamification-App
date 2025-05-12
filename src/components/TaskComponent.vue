@@ -11,15 +11,16 @@ const props = defineProps({
 const taskData = ref({ ...props.task });
 
 const backgroundStyle = computed(() => {
-  const sværhedsgrad = taskData.value?.sværhedsgrad?.toLowerCase() || "";
+  const sværhedsgrad = taskData.value?.Sværhedsgrad?.toLowerCase() || "";
+  console.log("Sværhedsgrad:" + sværhedsgrad);
 
-  if (sværhedsgrad.includes("Let")) {
+  if (sværhedsgrad.includes("let")) {
     return {
       backgroundImage: "url('/src/assets/let.png')",
       backgroundSize: "cover",
       backgroundPosition: "center",
     };
-  } else if (sværhedsgrad.includes("Middel")) {
+  } else if (sværhedsgrad.includes("middel")) {
     return {
       backgroundImage: "url('/src/assets/middel.png')",
       backgroundSize: "cover",
