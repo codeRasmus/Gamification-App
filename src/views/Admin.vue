@@ -1,17 +1,31 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { watch, ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import Host from "../components/Host.vue";
+
 const router = useRouter();
 const visibleCard = ref("card");
+
+const submissions = ref([]);
+const sessions = ref([]);
+const teams = ref([]);
+
+const selectedSession = ref("");
+const selectedTeam = ref("");
+const selectedSubmission = ref(null);
+const filteredTeams = ref([]);
+const filteredSubmissions = ref([]);
+
 function showCard(cardName) {
   visibleCard.value = cardName;
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (!localStorage.getItem("token")) {
     router.push("/login");
+    return;
   }
+
   const logoutBtn = document.getElementById("logout");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
@@ -19,17 +33,88 @@ onMounted(() => {
       router.push("/login");
     });
   }
+
   const hamburger = document.querySelector(".hamburger");
   if (hamburger) {
     hamburger.addEventListener("click", function () {
       toggleMenu(this);
     });
   }
+
+  try {
+    const res = await fetch("http://localhost:5500/api/submission", {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    if (res.ok) {
+      submissions.value = await res.json();
+
+      // Sessions udtrækkes fra submissions
+      sessions.value = [...new Set(submissions.value.map((s) => s.sessionId))];
+
+      // Teams udtrækkes unikt ud fra teamName
+      const uniqueTeams = new Map();
+      submissions.value.forEach((submission) => {
+        if (!uniqueTeams.has(submission.teamName)) {
+          uniqueTeams.set(submission.teamName, {
+            teamName: submission.teamName,
+          });
+        }
+      });
+      teams.value = Array.from(uniqueTeams.values());
+    } else if (res.status === 401) {
+      localStorage.removeItem("token");
+      router.push("/login");
+    } else {
+      alert("Kunne ikke hente submissions");
+    }
+  } catch (error) {
+    console.error("Fejl ved hentning af submissions:", error);
+    alert("Netværksfejl ved hentning af data.");
+  }
 });
+
+// Filtrer teams ud fra session
+watch(
+  [selectedSession, teams, submissions],
+  ([session, allTeams, allSubmissions]) => {
+    if (session) {
+      filteredTeams.value = allTeams.filter((team) =>
+        allSubmissions.some(
+          (submission) =>
+            submission.sessionId === session &&
+            submission.teamName === team.teamName
+        )
+      );
+    } else {
+      filteredTeams.value = [];
+    }
+  }
+);
+
+// Filtrer submissions ud fra valgt team og session
+watch(
+  [selectedTeam, selectedSession, teams, submissions],
+  ([teamName, sessionId, _allTeams, allSubmissions]) => {
+    if (teamName) {
+      filteredSubmissions.value = allSubmissions.filter(
+        (sub) => sub.teamName === teamName && sub.sessionId === sessionId
+      );
+    } else {
+      filteredSubmissions.value = [];
+    }
+  }
+);
+
+function toggleMenu(el) {
+  el.classList.toggle("active");
+  document.querySelector(".navMenu").classList.toggle("show");
+}
 
 const handleRegister = async (event) => {
   event.preventDefault();
-
   const username = event.target.username.value;
   const password = event.target.password.value;
 
@@ -66,12 +151,15 @@ const handleDelete = async (event) => {
 
   if (deleteId.trim()) {
     try {
-      const response = await fetch(`http://localhost:5500/api/tasks/${deleteId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `http://localhost:5500/api/tasks/${deleteId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          method: "DELETE",
+        }
+      );
 
       if (response.ok) {
         alert("Task deleted successfully");
@@ -115,42 +203,6 @@ const handleDeleteAllTasks = async (event) => {
   }
 };
 
-function toggleMenu(el) {
-  el.classList.toggle("active");
-  document.querySelector(".navMenu").classList.toggle("show");
-}
-
-const handleGetTask = async (event) => {
-  event.preventDefault();
-
-  const taskId = event.target.taskId.value;
-
-  if (taskId.trim()) {
-    try {
-      const response = await fetch(`http://localhost:5500/api/tasks/${taskId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        method: "GET",
-      });
-
-      if (response.ok) {
-        const task = await response.json();
-        console.log(task);
-      } else if (response.status === 401) {
-        localStorage.removeItem("token");
-        router.push("/login");
-      } else {
-        alert("Error fetching task");
-      }
-    } catch (error) {
-      alert("Error fetching task: " + error.message);
-    }
-  } else {
-    alert("Please provide a valid task ID");
-  }
-};
-
 const handlePatchTask = async (event) => {
   event.preventDefault();
 
@@ -168,14 +220,17 @@ const handlePatchTask = async (event) => {
 
   if (taskId.trim() && Object.keys(updatedFields).length > 0) {
     try {
-      const response = await fetch(`http://localhost:5500/api/tasks/${taskId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify(updatedFields),
-      });
+      const response = await fetch(
+        `http://localhost:5500/api/tasks/${taskId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify(updatedFields),
+        }
+      );
 
       if (response.ok) {
         const updatedTask = await response.json();
@@ -223,15 +278,14 @@ const handleFileUpload = async (event) => {
       if (response.ok) {
         alert("Spørgsmålene blev opdateret!");
       } else {
-        alert(data.message || "Fejl ved upload af spørgsmål");
+        alert(data.message || "Fejl ved fil-upload");
       }
     } catch (error) {
-      console.error("Fejl under CSV til JSON konvertering:", error);
-      alert("Fejl i filbehandling.");
+      alert("Fejl ved upload af fil: " + error.message);
     }
   };
 
-  reader.readAsText(fileInput); // Læs filen som tekst
+  reader.readAsText(fileInput);
 };
 </script>
 
@@ -249,25 +303,51 @@ const handleFileUpload = async (event) => {
       <ul>
         <li><a href="#" @click.prevent="showCard('card')">Game</a></li>
         <li><a href="#" @click.prevent="showCard('card1')">Se opgaver</a></li>
-        <li><a href="#" @click.prevent="showCard('card2-4')">Administrer Opgaver</a></li>
+        <li>
+          <a href="#" @click.prevent="showCard('card2-4')"
+            >Administrer Opgaver</a
+          >
+        </li>
         <li><a href="#" @click.prevent="showCard('card5')">Opret Admin</a></li>
+        <li>
+          <a href="#" @click.prevent="showCard('card6')">Se besvarelser</a>
+        </li>
         <li><a href="#" id="logout">Log ud</a></li>
       </ul>
     </nav>
     <div class="menuControls">
       <div v-show="visibleCard === 'card'" class="w-full"><Host /></div>
-      <form v-show="visibleCard === 'card1'" action="http://localhost:5500/api/tasks" method="GET" class="card">
+      <form
+        v-show="visibleCard === 'card1'"
+        action="http://localhost:5500/api/tasks"
+        method="GET"
+        class="card"
+      >
         <label for="">Hent alle opgaver</label>
         <button type="submit">Hent</button>
       </form>
-      <form v-show="visibleCard === 'card1'" @submit="handleGetTask" class="card1">
+      <form
+        v-show="visibleCard === 'card1'"
+        @submit="handleGetTask"
+        class="card1"
+      >
         <label for="taskId">Hent specifik opgave</label>
-        <input type="text" name="taskId" placeholder="Indtast ID på den opgave du vil hente" required />
+        <input
+          type="text"
+          name="taskId"
+          placeholder="Indtast ID på den opgave du vil hente"
+          required
+        />
         <button type="submit">Hent</button>
       </form>
 
       <!-- Tilføj opgave -->
-      <form v-show="visibleCard === 'card2-4'" action="http://localhost:5500/api/tasks" method="POST" class="card2">
+      <form
+        v-show="visibleCard === 'card2-4'"
+        action="http://localhost:5500/api/tasks"
+        method="POST"
+        class="card2"
+      >
         <h2>Tilføj opgave</h2>
         <label for="Spørgsmål">Spørgsmål</label>
         <input type="text" name="Spørgsmål" id="Spørgsmål" />
@@ -275,7 +355,9 @@ const handleFileUpload = async (event) => {
         <label for="Kategori">Vælg kategori:</label>
         <select id="Kategori" name="Kategori">
           <option value="anerkendelse">Anerkendelse</option>
-          <option value="situationsbestemt-ledelse">Situationsbestemt Ledelse</option>
+          <option value="situationsbestemt-ledelse">
+            Situationsbestemt Ledelse
+          </option>
           <option value="delegering">Delegering</option>
           <option value="konflikthåndtering">Konflikthåndtering</option>
           <option value="motivation">Motivation</option>
@@ -288,15 +370,23 @@ const handleFileUpload = async (event) => {
 
         <label for="Kompetencetype">Kompetencetype:</label>
         <select id="Kompetencetype" name="Kompetencetype">
-          <option value="motivation-kommunikation">Motivation / Kommunikation</option>
+          <option value="motivation-kommunikation">
+            Motivation / Kommunikation
+          </option>
           <option value="beslutningstagning">Beslutningstagning</option>
           <option value="udvikling-af-andre">Udvikling af andre</option>
           <option value="relationel-ledelse">Relationel ledelse</option>
           <option value="lederskab-samarbejde">Lederskab / Samarbejde</option>
-          <option value="eksempelgivende-ledelse">Eksempelgivende ledelse</option>
+          <option value="eksempelgivende-ledelse">
+            Eksempelgivende ledelse
+          </option>
           <option value="situationsforstaelse">Situationsforståelse</option>
-          <option value="mentorrolle-delegering">Mentorrolle / Delegering</option>
-          <option value="planlaegning-kommunikation">Planlægning / Kommunikation</option>
+          <option value="mentorrolle-delegering">
+            Mentorrolle / Delegering
+          </option>
+          <option value="planlaegning-kommunikation">
+            Planlægning / Kommunikation
+          </option>
           <option value="empati-strategi">Empati / Strategi</option>
         </select>
 
@@ -329,18 +419,33 @@ const handleFileUpload = async (event) => {
       </form>
 
       <!-- Opdater opgaver -->
-      <form v-show="visibleCard === 'card2-4'" @submit="handlePatchTask" class="card3">
+      <form
+        v-show="visibleCard === 'card2-4'"
+        @submit="handlePatchTask"
+        class="card3"
+      >
         <label for="taskId">Opgave ID</label>
-        <input type="text" name="taskId" placeholder="Enter task ID to update" required />
+        <input
+          type="text"
+          name="taskId"
+          placeholder="Enter task ID to update"
+          required
+        />
 
         <label for="Spørgsmål">Spørgsmål</label>
-        <input type="text" name="Spørgsmål" placeholder="Indtast nyt spørgsmål" />
+        <input
+          type="text"
+          name="Spørgsmål"
+          placeholder="Indtast nyt spørgsmål"
+        />
 
         <label for="Kategori">Vælg kategori:</label>
         <select id="Kategori" name="Kategori">
           <option value="">-- Vælg ny kategori --</option>
           <option value="anerkendelse">Anerkendelse</option>
-          <option value="situationsbestemt-ledelse">Situationsbestemt Ledelse</option>
+          <option value="situationsbestemt-ledelse">
+            Situationsbestemt Ledelse
+          </option>
           <option value="delegering">Delegering</option>
           <option value="konflikthåndtering">Konflikthåndtering</option>
           <option value="motivation">Motivation</option>
@@ -354,15 +459,23 @@ const handleFileUpload = async (event) => {
         <label for="Kompetencetype">Kompetencetype:</label>
         <select id="Kompetencetype" name="Kompetencetype">
           <option value="">-- Vælg ny kompetencetype --</option>
-          <option value="motivation-kommunikation">Motivation / Kommunikation</option>
+          <option value="motivation-kommunikation">
+            Motivation / Kommunikation
+          </option>
           <option value="beslutningstagning">Beslutningstagning</option>
           <option value="udvikling-af-andre">Udvikling af andre</option>
           <option value="relationel-ledelse">Relationel ledelse</option>
           <option value="lederskab-samarbejde">Lederskab / Samarbejde</option>
-          <option value="eksempelgivende-ledelse">Eksempelgivende ledelse</option>
+          <option value="eksempelgivende-ledelse">
+            Eksempelgivende ledelse
+          </option>
           <option value="situationsforstaelse">Situationsforståelse</option>
-          <option value="mentorrolle-delegering">Mentorrolle / Delegering</option>
-          <option value="planlaegning-kommunikation">Planlægning / Kommunikation</option>
+          <option value="mentorrolle-delegering">
+            Mentorrolle / Delegering
+          </option>
+          <option value="planlaegning-kommunikation">
+            Planlægning / Kommunikation
+          </option>
           <option value="empati-strategi">Empati / Strategi</option>
         </select>
 
@@ -399,30 +512,57 @@ const handleFileUpload = async (event) => {
       </form>
 
       <!-- Slet opgave -->
-      <form v-show="visibleCard === 'card2-4'" @submit="handleDelete" class="card4">
+      <form
+        v-show="visibleCard === 'card2-4'"
+        @submit="handleDelete"
+        class="card4"
+      >
         <label for="deleteId">Slet specifik opgave</label>
-        <input type="text" name="deleteId" placeholder="Skriv ID på den opgave du vil slette" required />
+        <input
+          type="text"
+          name="deleteId"
+          placeholder="Skriv ID på den opgave du vil slette"
+          required
+        />
         <button type="submit">Slet</button>
       </form>
 
       <!-- Slet ALLE opgaver -->
-      <form v-show="visibleCard === 'card2-4'" @submit="handleDeleteAllTasks" class="card4">
+      <form
+        v-show="visibleCard === 'card2-4'"
+        @submit="handleDeleteAllTasks"
+        class="card4"
+      >
         <h3>Slet alle opgaver</h3>
         <button type="submit">Slet alle</button>
       </form>
 
       <!-- Tilføj nyt opgavesæt -->
-      <form v-show="visibleCard === 'card2-4'" @submit="handleFileUpload" class="card">
+      <form
+        v-show="visibleCard === 'card2-4'"
+        @submit="handleFileUpload"
+        class="card"
+      >
         <h2>Upload CSV-fil med nye spørgsmål</h2>
 
         <label for="fileInput">Vælg CSV-fil</label>
-        <input type="file" id="fileInput" name="tasksFile" accept=".csv" required />
+        <input
+          type="file"
+          id="fileInput"
+          name="tasksFile"
+          accept=".csv"
+          required
+        />
 
         <button type="submit">Upload</button>
       </form>
 
       <!-- Opret Admin -->
-      <form v-show="visibleCard === 'card5'" @submit="handleRegister" class="card5">
+      <form
+        v-show="visibleCard === 'card5'"
+        @submit="handleRegister"
+        class="card5"
+      >
         <h2>Opret admin</h2>
         <label for="username">Brugernavn</label>
         <input type="text" name="username" id="username" />
@@ -431,6 +571,47 @@ const handleFileUpload = async (event) => {
         <input type="password" name="password" id="password" />
 
         <button type="submit">Opret bruger</button>
+      </form>
+      <form v-show="visibleCard === 'card6'" class="card6">
+        <h2>Hent besvarelser</h2>
+
+        <label for="session">Vælg session:</label>
+        <select id="session" v-model="selectedSession">
+          <option disabled value="">-- Vælg session --</option>
+          <option v-for="session in sessions" :key="session" :value="session">
+            {{ session }}
+          </option>
+        </select>
+
+        <label for="team">Vælg hold:</label>
+        <select id="team" v-model="selectedTeam" :disabled="!selectedSession">
+          <option disabled value="">-- Vælg hold --</option>
+          <option
+            v-for="team in filteredTeams"
+            :key="team.teamId"
+            :value="team.teamId"
+          >
+            {{ team.teamName }}
+          </option>
+        </select>
+
+        <label for="submission">Vælg besvarelse:</label>
+        <select
+          id="submission"
+          v-model="selectedSubmission"
+          :disabled="!selectedTeam"
+        >
+          <option disabled value="">-- Vælg besvarelse --</option>
+          <option
+            v-for="submission in filteredSubmissions"
+            :key="submission._id"
+            :value="submission._id"
+          >
+            {{ submission._id }}
+          </option>
+        </select>
+
+        <button type="submit" :disabled="!selectedSubmission">Hent</button>
       </form>
     </div>
     <div class="footerImg"></div>
