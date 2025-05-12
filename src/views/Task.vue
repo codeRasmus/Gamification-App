@@ -25,9 +25,9 @@ const allAnswers = computed(() => JSON.parse(localStorage.getItem("allAnswers") 
 let intervalId = null;
 
 onMounted(() => {
-  if (!selectedTeam.value || !sessionId) return;
-
   session.restoreTaskFromStorage();
+
+  if (!sessionId) router.push("/");
 
   const fetchStatus = () => {
     socket.emit("get-session-status", { sessionId });
@@ -72,6 +72,7 @@ const submitAll = () => {
   showSpinner.value = true;
   session.submitAllAnswers(sessionId, selectedTeam.value);
   localStorage.removeItem("allAnswers");
+  localStorage.removeItem("sessionId");
   setTimeout(() => {
     showSpinner.value = false;
     showThankYou.value = true;
