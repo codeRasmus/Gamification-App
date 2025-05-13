@@ -5,11 +5,13 @@ import Host from "../components/Host.vue";
 
 const router = useRouter();
 const visibleCard = ref("card");
+const menuOpen = ref(false);
+const taskTableShow = ref(false);
 
 const submissions = ref([]);
 const sessions = ref([]);
 const teams = ref([]);
-const tasks = ref([]); 
+const tasks = ref([]);
 
 const selectedSession = ref("");
 const selectedTeam = ref("");
@@ -19,6 +21,18 @@ const filteredSubmissions = ref([]);
 
 function showCard(cardName) {
   visibleCard.value = cardName;
+
+  if (cardName === "card1" || cardName === "card" || cardName === "card2-4" || cardName === "card5") {
+    taskTableShow.value = false;
+  }
+}
+
+function toggleMenu() {
+  menuOpen.value = !menuOpen.value;
+}
+
+function closeMenu() {
+  menuOpen.value = false;
 }
 
 onMounted(async () => {
@@ -32,13 +46,6 @@ onMounted(async () => {
     logoutBtn.addEventListener("click", () => {
       localStorage.removeItem("token");
       router.push("/login");
-    });
-  }
-
-  const hamburger = document.querySelector(".hamburger");
-  if (hamburger) {
-    hamburger.addEventListener("click", function () {
-      toggleMenu(this);
     });
   }
 
@@ -80,7 +87,7 @@ onMounted(async () => {
 // Filtrer teams ud fra session
 watch([selectedSession, teams, submissions], ([session, allTeams, allSubmissions]) => {
   if (session) {
-    console.log("Selected Session:", session);  // Debugging log
+    console.log("Selected Session:", session); // Debugging log
     filteredTeams.value = allTeams.filter((team) =>
       allSubmissions.some((submission) => submission.sessionId === session && submission.teamName === team.teamName)
     );
@@ -92,23 +99,17 @@ watch([selectedSession, teams, submissions], ([session, allTeams, allSubmissions
 // Filtrer submissions ud fra valgt team og session
 watch([selectedTeam, selectedSession, teams, submissions], ([teamName, sessionId, _allTeams, allSubmissions]) => {
   if (teamName && sessionId) {
-    const teamSubmissions = allSubmissions.filter(
-      (sub) => sub.teamName === teamName && sub.sessionId === sessionId
-    );
-    
+    const teamSubmissions = allSubmissions.filter((sub) => sub.teamName === teamName && sub.sessionId === sessionId);
+
     console.log("Filtered Team Submissions:", teamSubmissions);
 
-    filteredSubmissions.value = teamSubmissions.flatMap(submission => submission.answers);
+    filteredSubmissions.value = teamSubmissions.flatMap((submission) => submission.answers);
     console.log("Filtered Submissions:", filteredSubmissions.value);
   } else {
     filteredSubmissions.value = [];
   }
 });
 
-function toggleMenu(el) {
-  el.classList.toggle("active");
-  document.querySelector(".navMenu").classList.toggle("show");
-}
 const handleRegister = async (event) => {
   event.preventDefault();
   const username = event.target.username.value;
@@ -274,7 +275,7 @@ const handleFileUpload = async (event) => {
   reader.readAsText(fileInput);
 };
 const handleGetAllTasks = async (event) => {
-  event.preventDefault(); 
+  event.preventDefault();
   try {
     const response = await fetch("http://localhost:5500/api/tasks", {
       headers: {
@@ -282,129 +283,134 @@ const handleGetAllTasks = async (event) => {
       },
     });
 
-    console.log('Response status:', response.status);
+    console.log("Response status:", response.status);
     if (!response.ok) throw new Error(`Fejl under hentning: ${response.statusText}`);
 
     const data = await response.json();
-    console.log('Data:', data);
+    console.log("Data:", data);
     if (data.length === 0) {
       alert("Der er ingen opgaver i opgavebanken.");
     } else {
-      tasks.value = data; 
+      taskTableShow.value = true;
+      tasks.value = data;
     }
   } catch (err) {
     console.error(err);
     alert("Kunne ikke hente opgaver.");
   }
 };
-// const handleGetTask = async (event) => {
-//   event.preventDefault();
-
-//   const formData = new FormData(event.target);
-//   const taskId = formData.get("taskId");
-
-//   try {
-//     const response = await fetch(`http://localhost:5500/api/tasks/${taskId}`, {
-//       method: "GET",
-//       headers: {
-//         Authorization: `Bearer ${localStorage.getItem("token")}`,
-//       },
-//     });
-
-//     if (response.ok) {
-//       const task = await response.json();
-//       console.log("Hentet opgave:", task);
-//       // fx. this.task = task; hvis du vil vise den i din app
-//     } else if (response.status === 401) {
-//       localStorage.removeItem("token");
-//       router.push("/login");
-//     } else if (response.status === 404) {
-//       alert("Opgaven blev ikke fundet.");
-//     } else {
-//       alert("Noget gik galt under hentning af opgaven.");
-//     }
-//   } catch (error) {
-//     alert("Netværksfejl: " + error.message);
-//   }
-// };
 </script>
 
 <template>
   <div class="menu">
     <div class="title">
       <a href="/admin">GameMaster Menu</a>
-      <div class="hamburger">
+      <div class="hamburger" :class="{ active: menuOpen }" @click="toggleMenu">
         <span></span>
         <span></span>
         <span></span>
       </div>
     </div>
-    <nav class="navMenu">
-      <ul>
-        <li><a href="#" @click.prevent="showCard('card')">Game</a></li>
+    <Transition name="nav-fade">
+      <nav v-if="menuOpen" class="navMenu">
+        <ul>
           <li>
-          <a href="#" @click.prevent="showCard('card6')">Se besvarelser</a>
-        </li>
-        <li><a href="#" @click.prevent="showCard('card1')">Se opgaver</a></li>
-        <li>
-          <a href="#" @click.prevent="showCard('card2-4')">Administrer Opgaver</a>
-        </li>
-        <li><a href="#" @click.prevent="showCard('card5')">Opret Admin</a></li>
-        <li><a href="#" id="logout">Log ud</a></li>
-      </ul>
-    </nav>
+            <a
+              href="#"
+              @click.prevent="
+                showCard('card');
+                closeMenu();
+              "
+              >Game</a
+            >
+          </li>
+          <li>
+            <a
+              href="#"
+              @click.prevent="
+                showCard('card6');
+                closeMenu();
+              "
+              >Se besvarelser</a
+            >
+          </li>
+          <li>
+            <a
+              href="#"
+              @click.prevent="
+                showCard('card1');
+                closeMenu();
+              "
+              >Se opgaver</a
+            >
+          </li>
+          <li>
+            <a
+              href="#"
+              @click.prevent="
+                showCard('card2-4');
+                closeMenu();
+              "
+              >Administrer Opgaver</a
+            >
+          </li>
+          <li>
+            <a
+              href="#"
+              @click.prevent="
+                showCard('card5');
+                closeMenu();
+              "
+              >Opret Admin</a
+            >
+          </li>
+          <li><a href="#" id="logout">Log ud</a></li>
+        </ul>
+      </nav>
+    </Transition>
     <div class="menuControls">
       <div v-show="visibleCard === 'card'" class="w-full"><Host /></div>
-     
-      <!-- Vis alle opgaver -->
-      <form v-show="visibleCard === 'card1'" @submit="handleGetAllTasks" class="card1">
-      <label for="">Hent alle opgaver</label>
-      <button type="submit">Hent</button>
-      </form>
-      <table v-if="tasks.length" class="styled-table">
-      <thead>
-        <tr>
-          
-          <th>ID</th>
-          <th>Spørgsmål</th>
-      <th>Kategori</th>
-      <th>Kompetencetype</th>
-      <th>Medie</th>
-      <th>Opgavetype</th>
-   
-      <th>Sværhedsgrad</th>
-      <th>Tid</th>
-        </tr>
-     </thead>
-    <tbody>
-    <tr v-for="task in tasks" :key="task._id">
-       <td>{{ task._id }}</td>
-      <td>{{ task.Spørgsmål }}</td>
 
-      <td>{{ task.Kategori }}</td>
-      <td>{{ task.Kompetencetype }}</td>
-      <td>{{ task.Medie }}</td>
-      <td>{{ task.Opgavetype }}</td>
-      
-      <td>{{ task.Sværhedsgrad }}</td>
-      <td>{{ task.Tid }}</td>
-    </tr>
-  </tbody>
-      </table>
-      <!-- Vis specifik opgave -->
-      <!-- <form v-show="visibleCard === 'card1'" @submit="handleGetTask" class="card1">
-        <label for="taskId">Hent specifik opgave</label>
-        <input type="text" name="taskId" placeholder="Indtast ID på den opgave du vil hente" required />
+      <form v-show="visibleCard === 'card1'" @submit="handleGetAllTasks" class="card1">
+        <label for="">Hent alle opgaver</label>
         <button type="submit">Hent</button>
-      </form> -->
-      <!-- Tilføj opgave -->
+      </form>
+      <table v-if="taskTableShow" class="styled-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Spørgsmål</th>
+            <th>Kategori</th>
+            <th>Kompetencetype</th>
+            <th>Medie</th>
+            <th>Opgavetype</th>
+
+            <th>Sværhedsgrad</th>
+            <th>Tid</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="task in tasks" :key="task._id">
+            <td>{{ task._id }}</td>
+            <td>{{ task.Spørgsmål }}</td>
+
+            <td>{{ task.Kategori }}</td>
+            <td>{{ task.Kompetencetype }}</td>
+            <td>{{ task.Medie }}</td>
+            <td>{{ task.Opgavetype }}</td>
+
+            <td>{{ task.Sværhedsgrad }}</td>
+            <td>{{ task.Tid }}</td>
+          </tr>
+        </tbody>
+      </table>
       <form v-show="visibleCard === 'card2-4'" action="http://localhost:5500/api/tasks" method="POST" class="card2">
         <h2>Tilføj opgave</h2>
         <label for="Spørgsmål">Spørgsmål</label>
-        <input type="text" name="Spørgsmål"  />
+        <input type="text" name="Spørgsmål" />
 
         <label for="Kategori">Vælg kategori:</label>
-        <select  name="Kategori">
+        <select name="Kategori">
           <option value="anerkendelse">Anerkendelse</option>
           <option value="situationsbestemt-ledelse">Situationsbestemt Ledelse</option>
           <option value="delegering">Delegering</option>
@@ -418,7 +424,7 @@ const handleGetAllTasks = async (event) => {
         </select>
 
         <label for="Kompetencetype">Kompetencetype:</label>
-        <select  name="Kompetencetype">
+        <select name="Kompetencetype">
           <option value="motivation-kommunikation">Motivation / Kommunikation</option>
           <option value="beslutningstagning">Beslutningstagning</option>
           <option value="udvikling-af-andre">Udvikling af andre</option>
@@ -439,7 +445,7 @@ const handleGetAllTasks = async (event) => {
         </select>
 
         <label for="Opgavetype">Opgavetype:</label>
-        <select  name="Opgavetype">
+        <select name="Opgavetype">
           <option value="essay-refleksion">Essay / Refleksion</option>
           <option value="multiple-choice">Multiple Choice</option>
           <option value="case">Case</option>
@@ -448,14 +454,14 @@ const handleGetAllTasks = async (event) => {
         </select>
 
         <label for="Medie">Medie:</label>
-        <select  name="Medie">
+        <select name="Medie">
           <option value="video">Video</option>
           <option value="valg">Valg (radio buttons)</option>
           <option value="tekst">Tekst</option>
         </select>
 
         <label for="Tid">Tid i minutter:</label>
-        <input name="Tid"  type="number" min="1" />
+        <input name="Tid" type="number" min="1" />
         <button type="submit">Opret</button>
       </form>
       <!-- Opdater opgaver -->
@@ -482,7 +488,7 @@ const handleGetAllTasks = async (event) => {
         </select>
 
         <label for="Kompetencetype">Kompetencetype:</label>
-        <select  name="Kompetencetype">
+        <select name="Kompetencetype">
           <option value="">-- Vælg ny kompetencetype --</option>
           <option value="Motivation / Kommunikation">Motivation / Kommunikation</option>
           <option value="Beslutningstagning">Beslutningstagning</option>
@@ -497,7 +503,7 @@ const handleGetAllTasks = async (event) => {
         </select>
 
         <label for="Sværhedsgrad">Sværhedsgrad:</label>
-        <select  name="Sværhedsgrad">
+        <select name="Sværhedsgrad">
           <option value="">-- Vælg ny sværhedsgrad --</option>
           <option value="let">Let</option>
           <option value="mellem">Mellem</option>
@@ -505,7 +511,7 @@ const handleGetAllTasks = async (event) => {
         </select>
 
         <label for="Opgavetype">Opgavetype:</label>
-        <select  name="Opgavetype">
+        <select name="Opgavetype">
           <option value="">-- Vælg ny opgavetype --</option>
           <option value="essay-refleksion">Essay / Refleksion</option>
           <option value="multiple-choice">Multiple Choice</option>
@@ -515,7 +521,7 @@ const handleGetAllTasks = async (event) => {
         </select>
 
         <label for="Medie">Medie:</label>
-        <select  name="Medie">
+        <select name="Medie">
           <option value="">-- Vælg nyt medie --</option>
           <option value="video">Video</option>
           <option value="valg">Valg (radio buttons)</option>
@@ -523,7 +529,7 @@ const handleGetAllTasks = async (event) => {
         </select>
 
         <label for="Tid">Tid i minutter:</label>
-        <input name="Tid"  type="number" min="1" />
+        <input name="Tid" type="number" min="1" />
 
         <button type="submit">Opdater</button>
       </form>
@@ -559,36 +565,35 @@ const handleGetAllTasks = async (event) => {
         <button type="submit">Opret bruger</button>
       </form>
       <form v-show="visibleCard === 'card6'" class="card6">
-  <h2>Hent besvarelser</h2>
+        <h2>Hent besvarelser</h2>
 
-  <label for="session">Vælg session:</label>
-  <select id="session" v-model="selectedSession">
-    <option disabled value="">-- Vælg session --</option>
-    <option v-for="session in sessions" :key="session" :value="session">
-      {{ session }}
-    </option>
-  </select>
+        <label for="session">Vælg session:</label>
+        <select id="session" v-model="selectedSession">
+          <option disabled value="">-- Vælg session --</option>
+          <option v-for="session in sessions" :key="session" :value="session">
+            {{ session }}
+          </option>
+        </select>
 
-  <label for="team">Vælg hold:</label>
-  <select id="team" v-model="selectedTeam" :disabled="!selectedSession">
-    <option disabled value="">-- Vælg hold --</option>
-    <option v-for="team in filteredTeams" :key="team.teamName" :value="team.teamName">
-      {{ team.teamName }}
-    </option>
-  </select>
+        <label for="team">Vælg hold:</label>
+        <select id="team" v-model="selectedTeam" :disabled="!selectedSession">
+          <option disabled value="">-- Vælg hold --</option>
+          <option v-for="team in filteredTeams" :key="team.teamName" :value="team.teamName">
+            {{ team.teamName }}
+          </option>
+        </select>
 
-  <div v-if="filteredSubmissions.length">
-  <h3>Besvarelser</h3>
-  <ul>
-    <li v-for="(answer, index) in filteredSubmissions" :key="index">
-      <strong>Spørgsmål:</strong> {{ answer.taskId.Spørgsmål }}<br>
-      <strong>Svar:</strong> {{ answer.answer }}
-    </li>
-  </ul>
-</div>
-  <p v-else-if="selectedTeam">Ingen besvarelser fundet.</p>
-
-  </form>
+        <div v-if="filteredSubmissions.length">
+          <h3>Besvarelser</h3>
+          <ul>
+            <li v-for="(answer, index) in filteredSubmissions" :key="index">
+              <strong>Spørgsmål:</strong> {{ answer.taskId.Spørgsmål }}<br />
+              <strong>Svar:</strong> {{ answer.answer }}
+            </li>
+          </ul>
+        </div>
+        <p v-else-if="selectedTeam">Ingen besvarelser fundet.</p>
+      </form>
     </div>
     <div class="footerImg"></div>
   </div>
@@ -598,6 +603,7 @@ const handleGetAllTasks = async (event) => {
 .w-full {
   width: 100%;
 }
+
 .menu {
   display: flex;
   flex-direction: column;
@@ -739,7 +745,6 @@ button:focus {
 }
 
 .navMenu {
-  display: none;
   position: fixed;
   top: 100px;
   left: 0;
@@ -770,41 +775,53 @@ button:focus {
   background-color: #a12a4d;
 }
 
-.navMenu.show {
-  display: block;
+.nav-fade-enter-active,
+.nav-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.nav-fade-enter-from,
+.nav-fade-leave-to {
+  opacity: 0;
+  transform: translateX(400px);
+}
+
+.nav-fade-enter-to,
+.nav-fade-leave-from {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .styled-table {
   font-family: Verdana;
-    max-width: 100%;
-    border-collapse: collapse;
-    margin: 10px 0;
-    font-size: 10px;
-    text-align: left;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    margin-bottom: 50px;
-  }
+  max-width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 10px;
+  text-align: left;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  margin-bottom: 50px;
+}
 
-  .styled-table th,
-  .styled-table td {
-    padding: 10px 7px;
-    border: 1px solid #ddd;
-  }
+.styled-table th,
+.styled-table td {
+  padding: 10px 7px;
+  border: 1px solid #ddd;
+}
 
-  .styled-table th {
-    background-color: #8d1b3d;
-    color: white;
-    font-weight: bold;
-  }
+.styled-table th {
+  background-color: #8d1b3d;
+  color: white;
+  font-weight: bold;
+}
 
-  .styled-table tr:nth-child(even) {
-    background-color: #f2f2f2;
-  }
+.styled-table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
 
-  .styled-table tr:hover {
-    background-color: #f1f1f1;
-  }
-
+.styled-table tr:hover {
+  background-color: #f1f1f1;
+}
 
 /* Footer */
 .footerImg {
