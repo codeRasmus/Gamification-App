@@ -2,6 +2,7 @@
 import { onMounted, onBeforeUnmount, computed, ref } from "vue";
 import socket from "../socket";
 import { useSessionStore } from "../stores/session";
+import { CheckSquare, Square } from 'lucide-vue-next'
 const session = useSessionStore();
 
 const intervalId = ref(null);
@@ -95,16 +96,19 @@ socket.on("team-update", (updatedTeams) => {
       </div>
 
       <div class="team-status">
-        <h3>Holdstatus:</h3>
-        <ul>
-          <li v-for="team in Object.keys(teamStatus)" :key="team">
-            {{ team }}:
-            <span :class="{ taken: teamStatus[team] }">
-              {{ teamStatus[team] ? "Optaget" : "Ledig" }}
-            </span>
-          </li>
-        </ul>
-      </div>
+    <ul>
+      <li v-for="team in Object.keys(teamStatus)" :key="team">
+        {{ team }}:
+        <span class="icon" :class="{ taken: teamStatus[team] }">
+          <component
+            :is="teamStatus[team] ? CheckSquare : Square"
+            class="w-5 h-5"
+            :title="teamStatus[team] ? 'Optaget' : 'Ledig'" :size="32"
+          />
+        </span>
+      </li>
+    </ul>
+  </div>
 
       <button @click="startGame">Start spillet</button>
     </div>
@@ -174,6 +178,7 @@ ul {
 
 li {
   margin-bottom: 0.5rem;
+ 
 }
 
 label {
@@ -221,5 +226,41 @@ td {
 .taken {
   color: #8d1b3d;
   font-weight: bold;
+}
+
+.team-status {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.team-status ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  
+}
+
+.team-status li {
+  width: 150px;
+  font-size: 24px;
+  display: flex;
+ justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.icon {
+  display: inline-block;
+  margin-right: 0.5rem;
+}
+
+.icon svg {
+  color: #8d1b3d;
+}
+
+.icon.taken svg {
+  color: #3f5b58;
 }
 </style>

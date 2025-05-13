@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import socket from "../socket";
 import { useSessionStore } from "../stores/session";
@@ -9,6 +9,13 @@ const session = useSessionStore();
 const sessionInput = ref("");
 const error = ref("");
 const teams = ["Alpha", "Beta", "Delta", "Sigma", "Omega"];
+const greekLetters = computed(() => ({
+  Alpha: "Α",
+  Beta: "Β",
+  Delta: "Δ",
+  Sigma: "Σ",
+  Omega: "Ω"
+}));
 
 let redirected = false;
 
@@ -82,16 +89,20 @@ function chooseTeam(team) {
 <template>
   <div class="join-session-container">
     <h1>Lobby</h1>
+    
     <div v-if="!session.sessionCodeConfirmed" class="container">
+      
       <p v-if="error" class="error-message">{{ error }}</p>
+      
       <input v-model="sessionInput" placeholder="Indtast kode" />
+      <p style="color: white; font-weight: 300;">Du modtager spilkoden af Game Masteren</p>
       <button @click="joinSession">Join</button>
     </div>
 
     <div v-else-if="!session.selectedTeamName" class="team-selection">
       <p>Vælg dit hold</p>
-      <button v-for="team in teams" :key="team" @click="chooseTeam(team)">
-        {{ team }}
+      <button class="selectTeamNames" v-for="team in teams" :key="team" @click="chooseTeam(team)">
+        {{ greekLetters[team] || team }}
       </button>
       <p v-if="error" class="error-message">{{ error }}</p>
     </div>
@@ -120,10 +131,8 @@ h1 {
 input {
   padding: 1rem;
   border: 1px solid #ccc;
-
   font-size: 1rem;
   background-color: #ffffff;
-  margin-bottom: 1.5rem;
   width: 300px;
   transition: border-color 0.3s ease;
 }
@@ -138,7 +147,6 @@ button {
   background-color: #8d1b3d;
   color: white;
   border: none;
-
   font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.3s ease;
@@ -156,7 +164,7 @@ button:focus {
 
 p {
   color: #e74c3c;
-  margin-top: 1rem;
+  margin-top: 0.5rem;
 }
 
 .error-message {
@@ -185,19 +193,34 @@ p {
     color: white;
   }
 }
-
 .team-selection button {
+  width: 80px; 
+  height: 80px; 
+  border-radius: 50%; 
   background-color: #34495e;
+  display: flex;
+  align-items: center; 
+  justify-content: center; 
+  color: white;
+  font-size: 3rem;
+  text-align: center;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
 .team-selection button:hover {
   background-color: #2c3e50;
 }
 
+.team-selection button:focus {
+  outline: none;
+}
+
 .team-selection {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+
   align-items: center;
 }
 
@@ -211,9 +234,9 @@ h2 {
 .container {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.5rem;
   align-items: center;
   justify-content: center;
-  margin-top: 2rem;
+  margin-top: 1rem;
 }
 </style>
