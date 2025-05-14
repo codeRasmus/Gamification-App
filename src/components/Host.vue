@@ -2,7 +2,7 @@
 import { onMounted, onBeforeUnmount, computed, ref } from "vue";
 import socket from "../socket";
 import { useSessionStore } from "../stores/session";
-import { CheckSquare, Square } from 'lucide-vue-next'
+import { CheckSquare, Square } from "lucide-vue-next";
 const session = useSessionStore();
 
 const intervalId = ref(null);
@@ -61,7 +61,6 @@ onBeforeUnmount(() => {
   if (intervalId.value) clearInterval(intervalId.value);
 });
 
-// Socket listeners
 socket.on("session-status", (data) => {
   session.updateScoreboard(data);
 });
@@ -82,12 +81,15 @@ socket.on("team-update", (updatedTeams) => {
       <div class="task-selection">
         <h3>Vælg opgaver:</h3>
         <div v-if="tasks.length === 0">
-  <p>Ingen opgaver fundet</p>
-</div>
+          <p>Ingen opgaver fundet</p>
+        </div>
         <ul>
           <li v-for="task in tasks" :key="task._id">
             <label>
-              <input type="checkbox" :value="task._id" :checked="selectedTaskIds.includes(task._id)"
+              <input
+                type="checkbox"
+                :value="task._id"
+                :checked="selectedTaskIds.includes(task._id)"
                 @change="session.toggleTaskSelection(task._id)" />
               {{ task.Spørgsmål || task.title }}
             </label>
@@ -96,19 +98,19 @@ socket.on("team-update", (updatedTeams) => {
       </div>
 
       <div class="team-status">
-    <ul>
-      <li v-for="team in Object.keys(teamStatus)" :key="team">
-        {{ team }}:
-        <span class="icon" :class="{ taken: teamStatus[team] }">
-          <component
-            :is="teamStatus[team] ? CheckSquare : Square"
-            class="w-5 h-5"
-            :title="teamStatus[team] ? 'Optaget' : 'Ledig'" :size="32"
-          />
-        </span>
-      </li>
-    </ul>
-  </div>
+        <ul>
+          <li v-for="team in Object.keys(teamStatus)" :key="team">
+            {{ team }}:
+            <span class="icon" :class="{ taken: teamStatus[team] }">
+              <component
+                :is="teamStatus[team] ? CheckSquare : Square"
+                class="w-5 h-5"
+                :title="teamStatus[team] ? 'Optaget' : 'Ledig'"
+                :size="32" />
+            </span>
+          </li>
+        </ul>
+      </div>
 
       <button @click="startGame">Start spillet</button>
     </div>
@@ -178,7 +180,6 @@ ul {
 
 li {
   margin-bottom: 0.5rem;
- 
 }
 
 label {
@@ -239,14 +240,13 @@ td {
   padding: 0;
   display: flex;
   flex-direction: column;
-  
 }
 
 .team-status li {
   width: 150px;
   font-size: 24px;
   display: flex;
- justify-content: space-between;
+  justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
 }

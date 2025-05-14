@@ -58,11 +58,7 @@ onMounted(async () => {
 
     if (res.ok) {
       submissions.value = await res.json();
-
-      // Sessions udtrækkes fra submissions
       sessions.value = [...new Set(submissions.value.map((s) => s.sessionId))];
-
-      // Teams udtrækkes unikt ud fra teamName
       const uniqueTeams = new Map();
       submissions.value.forEach((submission) => {
         if (!uniqueTeams.has(submission.teamName)) {
@@ -87,7 +83,6 @@ onMounted(async () => {
 // Filtrer teams ud fra session
 watch([selectedSession, teams, submissions], ([session, allTeams, allSubmissions]) => {
   if (session) {
-    console.log("Selected Session:", session); // Debugging log
     filteredTeams.value = allTeams.filter((team) =>
       allSubmissions.some((submission) => submission.sessionId === session && submission.teamName === team.teamName)
     );
@@ -100,11 +95,7 @@ watch([selectedSession, teams, submissions], ([session, allTeams, allSubmissions
 watch([selectedTeam, selectedSession, teams, submissions], ([teamName, sessionId, _allTeams, allSubmissions]) => {
   if (teamName && sessionId) {
     const teamSubmissions = allSubmissions.filter((sub) => sub.teamName === teamName && sub.sessionId === sessionId);
-
-    console.log("Filtered Team Submissions:", teamSubmissions);
-
     filteredSubmissions.value = teamSubmissions.flatMap((submission) => submission.answers);
-    console.log("Filtered Submissions:", filteredSubmissions.value);
   } else {
     filteredSubmissions.value = [];
   }
@@ -223,7 +214,6 @@ const handlePatchTask = async (event) => {
       if (response.ok) {
         const updatedTask = await response.json();
         alert("Task updated successfully");
-        console.log(updatedTask);
       } else if (response.status === 401) {
         localStorage.removeItem("token");
         router.push("/login");
@@ -283,11 +273,9 @@ const handleGetAllTasks = async (event) => {
       },
     });
 
-    console.log("Response status:", response.status);
     if (!response.ok) throw new Error(`Fejl under hentning: ${response.statusText}`);
 
     const data = await response.json();
-    console.log("Data:", data);
     if (data.length === 0) {
       alert("Der er ingen opgaver i opgavebanken.");
     } else {

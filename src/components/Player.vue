@@ -14,14 +14,10 @@ const greekLetters = computed(() => ({
   Beta: "Β",
   Delta: "Δ",
   Sigma: "Σ",
-  Omega: "Ω"
+  Omega: "Ω",
 }));
 
 let redirected = false;
-
-socket.on("connect", () => {
-  console.log("🧩 Player socket ID:", socket.id);
-});
 
 socket.on("joined", ({ teamName }) => {
   session.setJoinedTeam(teamName);
@@ -29,13 +25,11 @@ socket.on("joined", ({ teamName }) => {
   localStorage.removeItem("allAnswers");
   localStorage.setItem("selectedTeam", teamName);
   localStorage.setItem("sessionId", sessionInput.value);
-  console.log("✅ Joined team:", teamName);
 });
 
 socket.on("receive-task", (task) => {
   if (redirected) return;
   redirected = true;
-  console.log("🚀 Received task:", task);
   localStorage.setItem("task", JSON.stringify(task));
   router.push("/task");
 });
@@ -47,7 +41,6 @@ socket.on("error", (msg) => {
 
 socket.on("session-valid", () => {
   session.sessionCodeConfirmed = true;
-  console.log("✅ Session eksisterer");
 });
 
 socket.on("session-not-found", () => {
@@ -62,10 +55,7 @@ function joinSession() {
   }
 
   error.value = "";
-  // Gem midlertidigt
   session.sessionId = sessionInput.value;
-
-  // Emit validering til backend
   socket.emit("validate-session", { sessionId: sessionInput.value });
 }
 
@@ -81,21 +71,18 @@ function chooseTeam(team) {
     sessionId: session.sessionId,
     teamName: team,
   });
-
-  console.log("Join request sendt:", session.sessionId, team);
 }
 </script>
 
 <template>
   <div class="join-session-container">
     <h1>Lobby</h1>
-    
+
     <div v-if="!session.sessionCodeConfirmed" class="container">
-      
       <p v-if="error" class="error-message">{{ error }}</p>
-      
+
       <input v-model="sessionInput" placeholder="Indtast kode" />
-      <p style="color: white; font-weight: 300;">Du modtager spilkoden af Game Masteren</p>
+      <p style="color: white; font-weight: 300">Du modtager spilkoden af Game Masteren</p>
       <button @click="joinSession">Join</button>
     </div>
 
@@ -194,13 +181,13 @@ p {
   }
 }
 .team-selection button {
-  width: 80px; 
-  height: 80px; 
-  border-radius: 50%; 
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
   background-color: #34495e;
   display: flex;
-  align-items: center; 
-  justify-content: center; 
+  align-items: center;
+  justify-content: center;
   color: white;
   font-size: 3rem;
   text-align: center;

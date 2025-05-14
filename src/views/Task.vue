@@ -45,12 +45,10 @@ onMounted(() => {
   });
 
   socket.on("receive-task", (task) => {
-    console.log("🔥 Modtaget ny opgave:", task);
     if (task?.Tid) session.setCurrentTask(task);
   });
 
   socket.on("no-more-tasks", () => {
-    console.log("✅ Modtaget 'no-more-tasks' fra server");
     session.currentTask = null;
     session.gameCompleted = true;
     seconds = null;
@@ -175,13 +173,10 @@ const submitAll = () => {
   height: 80px;
 }
 
-/* Task Container */
 .task-container {
   display: flex;
   flex-direction: column;
 }
-
-/* Task Section */
 
 .task-section {
   display: flex;

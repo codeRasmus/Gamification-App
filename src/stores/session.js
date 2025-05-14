@@ -58,15 +58,12 @@ export const useSessionStore = defineStore("session", {
     },
     setCurrentTask(task) {
       if (!task) return;
-
-      // Lav en ny reference og tving opdatering
       this.taskAnswer = "";
       this.seconds = (task.Tid || 5) * 60;
-      this.currentTask = { ...task }; // 🧠 tving ny reference
-      this.componentKey++; // 🧠 tving rerender
+      this.currentTask = { ...task };
+      this.componentKey++;
 
       localStorage.setItem("task", JSON.stringify(task));
-      console.log("✅ setCurrentTask: Ny task ID", task._id);
     },
     restoreTaskFromStorage() {
       const storedTask = localStorage.getItem("task");
@@ -91,7 +88,6 @@ export const useSessionStore = defineStore("session", {
       if (!this.taskAnswer || !this.currentTask || !this.currentTask._id) return;
 
       const allAnswers = JSON.parse(localStorage.getItem("allAnswers")) || [];
-      console.log("💾 Gemmer svar med spørgsmål:", this.currentTask.Spørgsmål, this.taskAnswer);
       allAnswers.push({
         taskId: this.currentTask._id,
         question: this.currentTask.Spørgsmål || this.currentTask.title || "Ukendt spørgsmål",
@@ -99,11 +95,9 @@ export const useSessionStore = defineStore("session", {
       });
 
       localStorage.setItem("allAnswers", JSON.stringify(allAnswers));
-      console.log("Svar gemt i localStorage");
 
       this.taskAnswer = "";
       socket.emit("next-task", { sessionId, teamName });
-      console.log("📨 Emitting next-task til server", { sessionId, teamName });
     },
     submitAllAnswers(sessionId, teamName) {
       const allAnswers = JSON.parse(localStorage.getItem("allAnswers")) || [];
@@ -123,7 +117,6 @@ export const useSessionStore = defineStore("session", {
         })
           .then((res) => res.json())
           .then((data) => {
-            console.log("Besvarelser indsendt:", data);
             localStorage.removeItem("allAnswers");
           })
           .catch((err) => {

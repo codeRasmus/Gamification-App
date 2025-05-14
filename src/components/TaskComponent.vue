@@ -21,7 +21,6 @@ const greekLetters = computed(() => ({
 
 const backgroundStyle = computed(() => {
   const sværhedsgrad = taskData.value?.Sværhedsgrad?.toLowerCase() || "";
-  console.log("Sværhedsgrad:" + sværhedsgrad);
 
   if (sværhedsgrad.includes("let")) {
     return {

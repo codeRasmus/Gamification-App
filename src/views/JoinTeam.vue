@@ -20,7 +20,7 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import socket from "../socket"; // ✅ din socket.js klient
+import socket from "../socket";
 
 const sessionIdInput = ref("");
 const teamName = ref(null);
