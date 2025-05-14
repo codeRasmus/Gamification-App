@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch, computed } from "vue";
+import { Clock } from "lucide-vue-next";
 
 const props = defineProps({
   task: {
@@ -9,6 +10,14 @@ const props = defineProps({
 });
 
 const taskData = ref({ ...props.task });
+const selectedTeam = ref(localStorage.getItem("selectedTeam"));
+const greekLetters = computed(() => ({
+  Alpha: "Α",
+  Beta: "Β",
+  Delta: "Δ",
+  Sigma: "Σ",
+  Omega: "Ω",
+}));
 
 const backgroundStyle = computed(() => {
   const sværhedsgrad = taskData.value?.Sværhedsgrad?.toLowerCase() || "";
@@ -47,10 +56,18 @@ watch(
 
 <template>
   <div v-if="taskData" :style="backgroundStyle" class="task-container">
+    <div class="team">
+      <div class="icon">
+        <h1>{{ greekLetters[selectedTeam] }}</h1>
+      </div>
+    </div>
     <div class="taskInfo">
       <p>Kategori: {{ taskData.Kategori || taskData.category || "Ingen kategori" }}</p>
-      <p>Tid: {{ taskData.Tid || taskData.timeLimit || 0 }} minutter</p>
-      <p>Type: {{ taskData.Opgavetype || taskData.type || "Ukendt type" }}</p>
+      <div class="time">
+        <Clock :stroke-width="3" />
+        <p>{{ taskData.Tid || taskData.timeLimit || 0 }} minutter</p>
+      </div>
+      <p>Opgavetype: {{ taskData.Opgavetype || taskData.type || "Ukendt type" }}</p>
     </div>
 
     <div class="task">
@@ -62,9 +79,10 @@ watch(
 <style scoped>
 .task-container {
   width: 100%;
-  min-height: 350px;
+  min-height: 250px;
+  max-height: 350px;
   text-align: left;
-  padding: 2rem 0;
+  padding: 1rem 0 2rem 0;
 }
 
 .taskInfo {
@@ -80,12 +98,37 @@ watch(
 
 .task {
   background-color: #8d1b3d;
-  margin: 5rem 1rem;
-  padding: 10px;
+  margin: 2rem 1rem;
+  padding: 20px 15px;
+  line-height: 1.4;
 }
 
 .task h1 {
   color: white;
   font-size: 1rem;
+}
+
+.time {
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.icon {
+  color: white;
+  background-color: #8d1b3d;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 100%;
+  margin: 0 1rem;
+  border: 2px solid white;
+}
+
+.icon h1 {
+  font-weight: normal;
 }
 </style>
