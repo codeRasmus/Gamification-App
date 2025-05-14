@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onBeforeUnmount, computed, ref } from "vue";
+import { onMounted, onBeforeUnmount, computed, ref, h } from "vue";
 import socket from "../socket";
 import { useSessionStore } from "../stores/session";
 import { CheckSquare, Square } from "lucide-vue-next";
@@ -15,6 +15,7 @@ const teamStatus = computed(() => session.teamStatus);
 const scoreboard = computed(() => session.scoreboard);
 const gameStarted = computed(() => session.gameStarted);
 const gameCreated = computed(() => session.gameCreated);
+const hasConnectedTeam = computed(() => Object.values(session.teamStatus).some((status) => status === true));
 
 async function fetchTasks() {
   const res = await fetch("http://localhost:5500/api/tasks");
@@ -97,6 +98,8 @@ socket.on("team-update", (updatedTeams) => {
         </ul>
       </div>
 
+      <div id="breaker"></div>
+
       <div class="team-status">
         <ul>
           <li v-for="team in Object.keys(teamStatus)" :key="team">
@@ -111,8 +114,10 @@ socket.on("team-update", (updatedTeams) => {
           </li>
         </ul>
       </div>
-
-      <button @click="startGame">Start spillet</button>
+      <p style="text-align: center; font-size: 12px" v-if="!hasConnectedTeam">
+        Vent på, at et hold tilslutter sig for at starte spillet.
+      </p>
+      <button v-if="hasConnectedTeam" :disabled="!hasConnectedTeam" @click="startGame">Start spillet</button>
     </div>
 
     <div class="scoreboard" v-show="gameStarted">
@@ -187,7 +192,9 @@ label {
 }
 
 input[type="checkbox"] {
-  margin-right: 0.5rem;
+  accent-color: #8d1b3d;
+  transform: scale(2);
+  margin: 10px;
 }
 
 button {
@@ -227,6 +234,12 @@ td {
 .taken {
   color: #8d1b3d;
   font-weight: bold;
+}
+
+#breaker {
+  width: 100%;
+  height: 2px;
+  background-color: #8d1b3d;
 }
 
 .team-status {

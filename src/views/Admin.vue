@@ -287,6 +287,10 @@ const handleGetAllTasks = async (event) => {
     alert("Kunne ikke hente opgaver.");
   }
 };
+function logout() {
+  localStorage.removeItem("token");
+  router.push("/login");
+}
 </script>
 
 <template>
@@ -352,7 +356,7 @@ const handleGetAllTasks = async (event) => {
               >Opret Admin</a
             >
           </li>
-          <li><a href="#" id="logout">Log ud</a></li>
+          <li><a id="logout" href="#" @click.prevent="logout">Log ud</a></li>
         </ul>
       </nav>
     </Transition>
@@ -363,35 +367,36 @@ const handleGetAllTasks = async (event) => {
         <label for="">Hent alle opgaver</label>
         <button type="submit">Hent</button>
       </form>
-      <table v-if="taskTableShow" class="styled-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Spørgsmål</th>
-            <th>Kategori</th>
-            <th>Kompetencetype</th>
-            <th>Medie</th>
-            <th>Opgavetype</th>
+     <div class="table-wrapper">
+       <p style="text-align: center;" v-if="taskTableShow">Scroll på tabellen 👉</p>
+  <table v-if="taskTableShow" id="scrollable-table" class="styled-table">
 
-            <th>Sværhedsgrad</th>
-            <th>Tid</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="task in tasks" :key="task._id">
-            <td>{{ task._id }}</td>
-            <td>{{ task.Spørgsmål }}</td>
-
-            <td>{{ task.Kategori }}</td>
-            <td>{{ task.Kompetencetype }}</td>
-            <td>{{ task.Medie }}</td>
-            <td>{{ task.Opgavetype }}</td>
-
-            <td>{{ task.Sværhedsgrad }}</td>
-            <td>{{ task.Tid }}</td>
-          </tr>
-        </tbody>
-      </table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Spørgsmål</th>
+        <th>Kategori</th>
+        <th>Kompetencetype</th>
+        <th>Medie</th>
+        <th>Opgavetype</th>
+        <th>Sværhedsgrad</th>
+        <th>Tid</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="task in tasks" :key="task._id">
+        <td>{{ task._id }}</td>
+        <td>{{ task.Spørgsmål }}</td>
+        <td>{{ task.Kategori }}</td>
+        <td>{{ task.Kompetencetype }}</td>
+        <td>{{ task.Medie }}</td>
+        <td>{{ task.Opgavetype }}</td>
+        <td>{{ task.Sværhedsgrad }}</td>
+        <td>{{ task.Tid }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
       <form v-show="visibleCard === 'card2-4'" action="http://localhost:5500/api/tasks" method="POST" class="card2">
         <h2>Tilføj opgave</h2>
         <label for="Spørgsmål">Spørgsmål</label>
@@ -553,7 +558,7 @@ const handleGetAllTasks = async (event) => {
         <button type="submit">Opret bruger</button>
       </form>
       <form v-show="visibleCard === 'card6'" class="card6">
-        <h2>Hent besvarelser</h2>
+        <h2>Se besvarelser</h2>
 
         <label for="session">Vælg session:</label>
         <select id="session" v-model="selectedSession">
@@ -571,15 +576,23 @@ const handleGetAllTasks = async (event) => {
           </option>
         </select>
 
-        <div v-if="filteredSubmissions.length">
-          <h3>Besvarelser</h3>
-          <ul>
-            <li v-for="(answer, index) in filteredSubmissions" :key="index">
-              <strong>Spørgsmål:</strong> {{ answer.taskId.Spørgsmål }}<br />
-              <strong>Svar:</strong> {{ answer.answer }}
-            </li>
-          </ul>
-        </div>
+       <div v-if="filteredSubmissions.length">
+  <h3>Besvarelser</h3>
+  <table id="besvarelser-table" class="styled-table">
+    <thead>
+      <tr>
+        <th>Spørgsmål</th>
+        <th>Svar</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="(answer, index) in filteredSubmissions" :key="index">
+        <td>{{ answer.taskId.Spørgsmål }}</td>
+        <td>{{ answer.answer }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
         <p v-else-if="selectedTeam">Ingen besvarelser fundet.</p>
       </form>
     </div>
@@ -624,7 +637,7 @@ const handleGetAllTasks = async (event) => {
 
 .menuControls {
   flex: 1;
-  padding: 120px 20px 140px;
+  padding: 120px 20px 60px;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
@@ -695,6 +708,15 @@ button:focus {
   outline: none;
 }
 
+#logout {
+  background-color: white;
+  color: #551025;
+  margin-top: 20px;
+   border: 1px solid #551025;
+  
+   text-align: center;
+}
+
 .card1,
 .card2,
 .card3,
@@ -733,6 +755,7 @@ button:focus {
 }
 
 .navMenu {
+  height: 100%;
   position: fixed;
   top: 100px;
   left: 0;
@@ -750,6 +773,7 @@ button:focus {
 }
 
 .navMenu ul li a {
+  font-size: 20px;
   color: white;
   text-decoration: none;
   display: block;
@@ -778,6 +802,10 @@ button:focus {
 .nav-fade-leave-from {
   opacity: 1;
   transform: translateX(0);
+}
+
+#besvarelser-table {
+  width: 100%; 
 }
 
 .styled-table {
@@ -809,6 +837,30 @@ button:focus {
 
 .styled-table tr:hover {
   background-color: #f1f1f1;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* For smooth scrolling på iOS-enheder */
+  max-width: 100%; /* Forhindrer bredden i at gå ud over containeren */
+}
+
+.styled-table {
+  width: 100%; 
+}
+
+#scrollable-table {
+  min-width: 800px;
+  border-collapse: collapse;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#scrollable-table th, #scrollable-table td {
+  padding: 12px;
+  text-align: left;
+  border: 1px solid #ddd;
 }
 
 /* Footer */

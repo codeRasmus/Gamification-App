@@ -95,7 +95,9 @@ function chooseTeam(team) {
     </div>
 
     <div v-else>
-      <h2>Du er nu på hold {{ session.selectedTeamName }}</h2>
+      <h2>Du har valgt {{ session.selectedTeamName }}</h2>
+      <h3>Afvent at Game Master starter</h3>
+      <h4>⏳</h4>
     </div>
   </div>
 </template>
@@ -216,6 +218,18 @@ h2 {
   font-size: 1.5rem;
   margin-top: 1.5rem;
   font-weight: 700;
+}
+h3 {
+  color: #fff;
+  font-size: 1rem;
+  margin-top: 1.5rem;
+  font-weight: 300;
+  text-align: center;
+}
+h4 {
+  font-size: 6rem;
+  text-align: center;
+  margin-top: 1.5rem;
 }
 
 .container {
