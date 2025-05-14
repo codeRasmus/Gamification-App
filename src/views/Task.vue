@@ -21,6 +21,13 @@ let seconds = computed(() => session.seconds);
 const currentIndex = computed(() => session.currentIndex);
 const noMoreTasks = computed(() => !currentTask.value && seconds.value !== null);
 const allAnswers = computed(() => JSON.parse(localStorage.getItem("allAnswers") || "[]"));
+const greekLetters = computed(() => ({
+  Alpha: "Α",
+  Beta: "Β",
+  Delta: "Δ",
+  Sigma: "Σ",
+  Omega: "Ω",
+}));
 
 let intervalId = null;
 
@@ -89,7 +96,7 @@ const submitAll = () => {
       <img src="../assets/hjv_logo_hvid.png" />
       <h1>Militeam</h1>
       <div class="countdown-wrapper">
-        <Countdown v-if="seconds > 0 && seconds !== null" :seconds="seconds" :key="seconds" />
+        <Countdown v-if="seconds > 0 && seconds !== null" :seconds="seconds" />
         <div v-else class="placeholder"></div>
       </div>
     </div>
@@ -98,15 +105,18 @@ const submitAll = () => {
       <div v-if="seconds >= 0 && currentTask && !session.gameCompleted" class="task-section">
         <TaskComponent :task="currentTask" :key="session.componentKey" />
         <input v-model="session.taskAnswer" type="text" placeholder="Skriv din besvarelse her" class="answerInput" />
-        <button @click="saveAnswerAndContinue">Aflever besvarelse</button>
+        <button @click="saveAnswerAndContinue" class="deliver">Aflever besvarelse</button>
       </div>
 
       <div v-else-if="session.gameCompleted" class="completed-tasks">
         <ul v-if="!showThankYou" class="completed-tasks-ul">
+          <div class="icon">
+            <h1>{{ greekLetters[selectedTeam] }}</h1>
+          </div>
           <h2>Spillet er afsluttet!</h2>
           <h3>Dine besvarelser:</h3>
           <li v-for="(ans, index) in allAnswers" :key="index">
-            <h4>Svar på: "{{ ans.question }}"</h4>
+            <h4>Spørgsmål: "{{ ans.question }}"</h4>
             <br />
             <em>Svar:</em> "{{ ans.answer }}"
           </li>
@@ -115,7 +125,7 @@ const submitAll = () => {
 
         <Spinner v-if="showSpinner" />
 
-        <div v-if="showThankYou">
+        <div v-if="showThankYou" class="thankYouForPlaying">
           <h1 class="thankYou">Tak fordi du spillede med!</h1>
         </div>
       </div>
@@ -219,8 +229,7 @@ const submitAll = () => {
 
 .completed-tasks {
   background-color: #f1f5f4;
-  padding: 2rem;
-  width: 100%;
+  padding: 1rem;
   max-width: 600px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   animation: fadeIn 0.5s ease-in-out;
@@ -248,13 +257,16 @@ const submitAll = () => {
   padding-left: 0;
   text-align: left;
   margin-bottom: 1.5rem;
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .completed-tasks li {
   background-color: #ffffff;
   margin-bottom: 0.5rem;
   padding: 0.8rem 1rem;
-  border-radius: 6px;
   border: 1px solid #ddd;
   font-size: 1rem;
   color: #333;
@@ -274,5 +286,35 @@ const submitAll = () => {
 
 .completed-tasks button:hover {
   background-color: #2e4744;
+}
+
+.deliver {
+  margin: 1rem;
+  padding: 20px 15px;
+  width: 90%;
+}
+
+.icon {
+  color: white;
+  background-color: #8d1b3d;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 100%;
+  border: 2px solid white;
+  margin: 0 0 10px 0;
+}
+
+.icon h1 {
+  font-weight: normal;
+  font-size: 38px;
+}
+
+.thankYouForPlaying {
+  display: flex;
+  height: 80vh;
+  align-items: center;
 }
 </style>
