@@ -15,11 +15,10 @@ const showSpinner = ref(false);
 const showThankYou = ref(false);
 const sessionId = localStorage.getItem("sessionId");
 
+// Computed reaktive "proxies" til session store
+// Dette giver automatisk reaktion på ændringer
 const currentTask = computed(() => session.currentTask);
-const taskAnswer = computed(() => session.taskAnswer);
 let seconds = computed(() => session.seconds);
-const currentIndex = computed(() => session.currentIndex);
-const noMoreTasks = computed(() => !currentTask.value && seconds.value !== null);
 const allAnswers = computed(() => JSON.parse(localStorage.getItem("allAnswers") || "[]"));
 const greekLetters = computed(() => ({
   Alpha: "Α",
@@ -31,23 +30,31 @@ const greekLetters = computed(() => ({
 
 let intervalId = null;
 
+// Lifecycle hook som aktiverer når komponentet er indsat / mounted
 onMounted(() => {
+  // Funktion som henter task ned fra localStorage hvis bruger forlader siden
   session.restoreTaskFromStorage();
 
   if (!sessionId) router.push("/");
 
+  // Arrow function til socket emit.
+  // Henter session status fra server baseret på sessionId
   const fetchStatus = () => {
     socket.emit("get-session-status", { sessionId });
   };
 
+  // Socket listener til session-status
+  // updateTimerFromScoreboard opdaterer tiden baseret på hvad serveren siger der er tilbage
   socket.on("session-status", (scoreboard) => {
     session.updateTimerFromScoreboard(scoreboard, selectedTeam.value);
   });
 
+  // Socket listener til modtagning af task
   socket.on("receive-task", (task) => {
     if (task?.Tid) session.setCurrentTask(task);
   });
 
+  // Socket listener til hvis der ikke er flere tasks
   socket.on("no-more-tasks", () => {
     session.currentTask = null;
     session.gameCompleted = true;
@@ -58,6 +65,7 @@ onMounted(() => {
   intervalId = setInterval(fetchStatus, 1000);
 });
 
+// Watcher der tjekker om spillet er færdigt
 watch(
   () => session.gameCompleted,
   (newValue) => {
@@ -65,14 +73,17 @@ watch(
   }
 );
 
+// Lifecycle hook som aktiverer når komponentet er fjernet / unmounted.
 onUnmounted(() => {
   if (intervalId) clearInterval(intervalId);
 });
 
+// Arrow function til at gemme svar
 const saveAnswerAndContinue = () => {
   session.saveAnswer(selectedTeam.value, sessionId);
 };
 
+// Afsend alle svar, vis en spinner i 1 sekund og send brugeren til forsiden efter 6 sekunder.
 const submitAll = () => {
   showSpinner.value = true;
   session.submitAllAnswers(sessionId, selectedTeam.value);
@@ -81,7 +92,7 @@ const submitAll = () => {
   setTimeout(() => {
     showSpinner.value = false;
     showThankYou.value = true;
-  }, 2000);
+  }, 1000);
   setTimeout(() => {
     router.push("/");
   }, 6000);

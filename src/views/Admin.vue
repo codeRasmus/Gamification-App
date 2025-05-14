@@ -19,28 +19,34 @@ const selectedSubmission = ref(null);
 const filteredTeams = ref([]);
 const filteredSubmissions = ref([]);
 
+// Funktion til visning af card
 function showCard(cardName) {
   visibleCard.value = cardName;
 
+  // Bruges samtidig til at fjerne tabel hvis man ikke er på task-siden mere
   if (cardName === "card1" || cardName === "card" || cardName === "card2-4" || cardName === "card5") {
     taskTableShow.value = false;
   }
 }
 
+// Funktion til at toggle burger menu
 function toggleMenu() {
   menuOpen.value = !menuOpen.value;
 }
 
+// Funktion til at lukke menu igen
 function closeMenu() {
   menuOpen.value = false;
 }
 
+// Lifecycle hook som kører når admin.vue er loadet (mounted)
 onMounted(async () => {
   if (!localStorage.getItem("token")) {
     router.push("/login");
     return;
   }
 
+  // Logout
   const logoutBtn = document.getElementById("logout");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
@@ -49,13 +55,17 @@ onMounted(async () => {
     });
   }
 
+  // Henter submissions fra brugerne (besvarelser)
   try {
     const res = await fetch("http://localhost:5500/api/submission", {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        Authorization: `Bearer ${localStorage.getItem("token")}`, // JWT Authentication,
       },
     });
 
+    // Håndtering af submissions
+    // Den udtrækker unikke sessions og teams via. set til sessions og map til teams
+    // teams.value bliver et array med unikke teams bundet til en session
     if (res.ok) {
       submissions.value = await res.json();
       sessions.value = [...new Set(submissions.value.map((s) => s.sessionId))];
@@ -101,6 +111,7 @@ watch([selectedTeam, selectedSession, teams, submissions], ([teamName, sessionId
   }
 });
 
+// Asynkron funktion til registrering af admin/gamemaster
 const handleRegister = async (event) => {
   event.preventDefault();
   const username = event.target.username.value;
@@ -131,6 +142,8 @@ const handleRegister = async (event) => {
     alert("Netværksfejl");
   }
 };
+
+// Asynkron funktion til sletning af enkelt task
 const handleDelete = async (event) => {
   event.preventDefault();
 
@@ -160,6 +173,7 @@ const handleDelete = async (event) => {
     alert("Please provide a valid task ID");
   }
 };
+// Asynkron funktion til sletning af alle tasks
 const handleDeleteAllTasks = async (event) => {
   event.preventDefault();
 
@@ -185,6 +199,8 @@ const handleDeleteAllTasks = async (event) => {
     alert("Netværksfejl under sletning: " + error.message);
   }
 };
+
+// Asynkron funktion til opdatering af enkelt task
 const handlePatchTask = async (event) => {
   event.preventDefault();
 
@@ -227,6 +243,8 @@ const handlePatchTask = async (event) => {
     alert("Please provide a valid task ID and update some fields");
   }
 };
+
+// Asynkron funktion til upload af nye opgaver via. CSV fil
 const handleFileUpload = async (event) => {
   event.preventDefault();
 
@@ -264,6 +282,8 @@ const handleFileUpload = async (event) => {
 
   reader.readAsText(fileInput);
 };
+
+// Asynkron funktion til at se alle tasks
 const handleGetAllTasks = async (event) => {
   event.preventDefault();
   try {
@@ -367,36 +387,35 @@ function logout() {
         <label for="">Hent alle opgaver</label>
         <button type="submit">Hent</button>
       </form>
-     <div class="table-wrapper">
-       <p style="text-align: center;" v-if="taskTableShow">Scroll på tabellen 👉</p>
-  <table v-if="taskTableShow" id="scrollable-table" class="styled-table">
-
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Spørgsmål</th>
-        <th>Kategori</th>
-        <th>Kompetencetype</th>
-        <th>Medie</th>
-        <th>Opgavetype</th>
-        <th>Sværhedsgrad</th>
-        <th>Tid</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-for="task in tasks" :key="task._id">
-        <td>{{ task._id }}</td>
-        <td>{{ task.Spørgsmål }}</td>
-        <td>{{ task.Kategori }}</td>
-        <td>{{ task.Kompetencetype }}</td>
-        <td>{{ task.Medie }}</td>
-        <td>{{ task.Opgavetype }}</td>
-        <td>{{ task.Sværhedsgrad }}</td>
-        <td>{{ task.Tid }}</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+      <div class="table-wrapper">
+        <p style="text-align: center" v-if="taskTableShow">Scroll på tabellen 👉</p>
+        <table v-if="taskTableShow" id="scrollable-table" class="styled-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Spørgsmål</th>
+              <th>Kategori</th>
+              <th>Kompetencetype</th>
+              <th>Medie</th>
+              <th>Opgavetype</th>
+              <th>Sværhedsgrad</th>
+              <th>Tid</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="task in tasks" :key="task._id">
+              <td>{{ task._id }}</td>
+              <td>{{ task.Spørgsmål }}</td>
+              <td>{{ task.Kategori }}</td>
+              <td>{{ task.Kompetencetype }}</td>
+              <td>{{ task.Medie }}</td>
+              <td>{{ task.Opgavetype }}</td>
+              <td>{{ task.Sværhedsgrad }}</td>
+              <td>{{ task.Tid }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <form v-show="visibleCard === 'card2-4'" action="http://localhost:5500/api/tasks" method="POST" class="card2">
         <h2>Tilføj opgave</h2>
         <label for="Spørgsmål">Spørgsmål</label>
@@ -576,23 +595,23 @@ function logout() {
           </option>
         </select>
 
-       <div v-if="filteredSubmissions.length">
-  <h3>Besvarelser</h3>
-  <table id="besvarelser-table" class="styled-table">
-    <thead>
-      <tr>
-        <th>Spørgsmål</th>
-        <th>Svar</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-for="(answer, index) in filteredSubmissions" :key="index">
-        <td>{{ answer.taskId.Spørgsmål }}</td>
-        <td>{{ answer.answer }}</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+        <div v-if="filteredSubmissions.length">
+          <h3>Besvarelser</h3>
+          <table id="besvarelser-table" class="styled-table">
+            <thead>
+              <tr>
+                <th>Spørgsmål</th>
+                <th>Svar</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(answer, index) in filteredSubmissions" :key="index">
+                <td>{{ answer.taskId.Spørgsmål }}</td>
+                <td>{{ answer.answer }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         <p v-else-if="selectedTeam">Ingen besvarelser fundet.</p>
       </form>
     </div>
@@ -712,9 +731,9 @@ button:focus {
   background-color: white;
   color: #551025;
   margin-top: 20px;
-   border: 1px solid #551025;
-  
-   text-align: center;
+  border: 1px solid #551025;
+
+  text-align: center;
 }
 
 .card1,
@@ -805,7 +824,7 @@ button:focus {
 }
 
 #besvarelser-table {
-  width: 100%; 
+  width: 100%;
 }
 
 .styled-table {
@@ -846,7 +865,7 @@ button:focus {
 }
 
 .styled-table {
-  width: 100%; 
+  width: 100%;
 }
 
 #scrollable-table {
@@ -857,7 +876,8 @@ button:focus {
   -webkit-overflow-scrolling: touch;
 }
 
-#scrollable-table th, #scrollable-table td {
+#scrollable-table th,
+#scrollable-table td {
   padding: 12px;
   text-align: left;
   border: 1px solid #ddd;

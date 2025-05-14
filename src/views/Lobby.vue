@@ -1,5 +1,4 @@
 <script setup>
-import Countdown from "../components/Countdown.vue";
 import Player from "../components/Player.vue";
 </script>
 <template>

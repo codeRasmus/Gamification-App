@@ -1,6 +1,8 @@
 <script setup>
 import { ref, watch } from "vue";
 
+// Seconds prop som kommer fra Task.vue
+// Gør at vi kan angive sekunder i Task.vue i dette komponent
 const props = defineProps({
   seconds: {
     type: Number,
@@ -12,6 +14,7 @@ const displayTime = ref("");
 const progress = ref(100);
 const totalSeconds = ref(props.seconds);
 
+// Watcher til at opdatere tid. Holder både øje med om tiden er gået eller om typen på tiden ikke er number
 watch(
   () => props.seconds,
   (newSeconds) => {
@@ -32,6 +35,7 @@ watch(
   { immediate: true }
 );
 
+// Funktion til at formatere tiden, så den står som f.eks. 1:00
 function formatTime(seconds) {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;

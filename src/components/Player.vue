@@ -19,6 +19,8 @@ const greekLetters = computed(() => ({
 
 let redirected = false;
 
+// Socket listener til player join. Fjerner bl.a. task og allAnswers i localStorage.
+// Sætter samtidig et hold og hvilken session man er i, til localStorage.
 socket.on("joined", ({ teamName }) => {
   session.setJoinedTeam(teamName);
   localStorage.removeItem("task");
@@ -27,6 +29,8 @@ socket.on("joined", ({ teamName }) => {
   localStorage.setItem("sessionId", sessionInput.value);
 });
 
+// Socket listener til at man modtager en opgave
+// Hvis det er første gang, sender den en til /task
 socket.on("receive-task", (task) => {
   if (redirected) return;
   redirected = true;
@@ -34,20 +38,25 @@ socket.on("receive-task", (task) => {
   router.push("/task");
 });
 
+// Socket listener til fejl
 socket.on("error", (msg) => {
   error.value = msg;
   console.error("❌ Fejl:", msg);
 });
 
+// Socket listener fra server til om ens session er valid
 socket.on("session-valid", () => {
   session.sessionCodeConfirmed = true;
 });
 
+// Socket listener til hvis sessionen ikke er fundet
+// Bruges til at man ikke kan tilkoble en ikke-eksisterende session
 socket.on("session-not-found", () => {
   error.value = "Session findes ikke. Tjek den 6-cifrede kode.";
   session.sessionCodeConfirmed = false;
 });
 
+// Funktion til tilkobling af session
 function joinSession() {
   if (!sessionInput.value || sessionInput.value.length !== 6) {
     error.value = "Indtast en gyldig 6-cifret kode";
@@ -59,6 +68,7 @@ function joinSession() {
   socket.emit("validate-session", { sessionId: sessionInput.value });
 }
 
+// Funktion til håndtering af holdvalg
 function chooseTeam(team) {
   error.value = "";
 

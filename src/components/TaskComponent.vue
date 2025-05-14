@@ -2,6 +2,8 @@
 import { ref, watch, computed } from "vue";
 import { Clock } from "lucide-vue-next";
 
+// Task prop som kommer fra Task.vue
+// Nødvendigt for at kunne vise tasks
 const props = defineProps({
   task: {
     type: Object,
@@ -19,6 +21,7 @@ const greekLetters = computed(() => ({
   Omega: "Ω",
 }));
 
+// Computed til ændring af baggrund af task baseret på sværhedsgrad
 const backgroundStyle = computed(() => {
   const sværhedsgrad = taskData.value?.Sværhedsgrad?.toLowerCase() || "";
 
@@ -43,6 +46,7 @@ const backgroundStyle = computed(() => {
   }
 });
 
+// Watcher der kigger på om task bliver opdateret
 watch(
   () => props.task,
   (newVal) => {

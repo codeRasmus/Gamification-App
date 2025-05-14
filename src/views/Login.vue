@@ -3,6 +3,7 @@ import { onMounted } from "vue";
 import { useRouter } from "vue-router";
 const router = useRouter();
 
+// Lifecycle hook som aktiverer når komponentet er indsat / mounted
 onMounted(() => {
   const form = document.querySelector("form");
   const statusMessage = document.querySelector(".statusMessage");
@@ -13,6 +14,7 @@ onMounted(() => {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
 
+    // Fetch til login
     try {
       const res = await fetch("http://localhost:5500/api/admin/login", {
         method: "POST",
@@ -62,7 +64,7 @@ onMounted(() => {
 .loginComponent {
   display: flex;
   justify-content: center;
-  align-items: center; 
+  align-items: center;
   flex-direction: column;
   height: 100vh;
   background: #551025;

@@ -7,7 +7,8 @@ const session = useSessionStore();
 
 const intervalId = ref(null);
 
-// Computed proxies for reactive store state
+// Computed reaktive "proxies" til session store
+// Dette giver automatisk reaktion på ændringer
 const sessionId = computed(() => session.sessionId);
 const tasks = computed(() => session.tasks);
 const selectedTaskIds = computed(() => session.selectedTaskIds);
@@ -17,16 +18,19 @@ const gameStarted = computed(() => session.gameStarted);
 const gameCreated = computed(() => session.gameCreated);
 const hasConnectedTeam = computed(() => Object.values(session.teamStatus).some((status) => status === true));
 
+// Funktion til at hente tasks fra server
 async function fetchTasks() {
   const res = await fetch("http://localhost:5500/api/tasks");
   const data = await res.json();
   session.setTasks(data);
 }
 
+// Funktion til at hente sessionStatus via. Socket.io
 function getSessionStatus() {
   socket.emit("get-session-status", { sessionId: session.sessionId });
 }
 
+// Funktion til at formatere tiden, så den står som f.eks. 1:00
 function formatTime(seconds) {
   if (!seconds || seconds <= 0) return "0:00";
   const mins = Math.floor(seconds / 60);
@@ -34,12 +38,14 @@ function formatTime(seconds) {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
+// Funktion til at oprette en ny session / nyt game
 function createGame() {
   session.createSession();
   socket.emit("host-join", { sessionId: session.sessionId });
   fetchTasks();
 }
 
+// Funktion til at starte den session man er i
 function startGame() {
   if (!session.startGame()) {
     alert("Vælg mindst én opgave!");
@@ -51,6 +57,8 @@ function startGame() {
     selectedTaskIds: session.selectedTaskIds,
   });
 
+  // setInterval der tjekker for session status hvert sekund
+  // Bruges bl.a. til at tjekke tiden og hvilken opgave brugerne er ved
   intervalId.value = setInterval(() => {
     getSessionStatus();
   }, 1000);
@@ -58,14 +66,17 @@ function startGame() {
   getSessionStatus();
 }
 
+// Clearing af interval (tid)
 onBeforeUnmount(() => {
   if (intervalId.value) clearInterval(intervalId.value);
 });
 
+// Socket listener til opdatering af overbliks-board
 socket.on("session-status", (data) => {
   session.updateScoreboard(data);
 });
 
+//Socket listener til opdatering af hold, når en bruger vælger et hold
 socket.on("team-update", (updatedTeams) => {
   session.updateTeamStatus(updatedTeams);
 });
