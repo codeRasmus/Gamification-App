@@ -72,7 +72,7 @@ Projektet er bygget med **Vue 3** og bruger `Vite` som build tool.
 
 ### 5. Vedligeholdelse og redigerbarhed
 
-- Spørgsmålsbank kan vedligeholdes via struktur via. Admin panelet med mulighed for upload af regneark med spørgsmål
+- Spørgsmålsbank kan vedligeholdes via struktur i Admin panelet med mulighed for batch-upload af regneark med spørgsmål. Hertil kan filen taskBankForTestingBatchUpload.csv, som ligger i repo'ets rod bruges.
 - Let at overdrage til nye undervisere eller udviklere uden teknisk baggrund
 
 ## Ikke implementeret (endnu)
