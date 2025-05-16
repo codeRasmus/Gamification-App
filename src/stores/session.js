@@ -22,7 +22,7 @@ export const useSessionStore = defineStore("session", {
     currentTask: null,
     seconds: null,
     taskAnswer: "",
-    taskQueue: [], // shuffled array
+    taskQueue: [],
     currentIndex: 0,
     componentKey: 0,
     gameCompleted: false,
@@ -38,7 +38,9 @@ export const useSessionStore = defineStore("session", {
     // Tilføjer taskId hvis den ikke er valgt, ellers fjerner den det fra de valgte opgaver
     toggleTaskSelection(taskId) {
       if (this.selectedTaskIds.includes(taskId)) {
-        this.selectedTaskIds = this.selectedTaskIds.filter((id) => id !== taskId);
+        this.selectedTaskIds = this.selectedTaskIds.filter(
+          (id) => id !== taskId
+        );
       } else {
         this.selectedTaskIds.push(taskId);
       }
@@ -96,12 +98,16 @@ export const useSessionStore = defineStore("session", {
     },
     // Gemmer et svar lokalt og sender signal til serveren om næste opgave
     saveAnswer(teamName, sessionId) {
-      if (!this.taskAnswer || !this.currentTask || !this.currentTask._id) return;
+      if (!this.taskAnswer || !this.currentTask || !this.currentTask._id)
+        return;
 
       const allAnswers = JSON.parse(localStorage.getItem("allAnswers")) || [];
       allAnswers.push({
         taskId: this.currentTask._id,
-        question: this.currentTask.Spørgsmål || this.currentTask.title || "Ukendt spørgsmål",
+        question:
+          this.currentTask.Spørgsmål ||
+          this.currentTask.title ||
+          "Ukendt spørgsmål",
         answer: this.taskAnswer,
       });
 
